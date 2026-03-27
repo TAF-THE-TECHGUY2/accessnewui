@@ -1,13 +1,54 @@
+:root {
+  --page-bg: #f3ece3;
+  --card-bg: #fbf7f1;
+  --card-bg-soft: #f7f0e8;
+  --border-soft: #e5dacd;
+  --ink: #3f3933;
+  --muted: #6e675f;
+  --accent: #6f8c8a;
+  --accent-deep: #607c79;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: "DM Sans", system-ui, sans-serif;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 50% 12%, rgba(255, 255, 255, 0.82), transparent 34%),
+    radial-gradient(circle at 50% 45%, rgba(245, 237, 227, 0.5), transparent 42%),
+    linear-gradient(180deg, #f7f1e8 0%, var(--page-bg) 100%);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+.font-display {
+  font-family: "Cormorant Garamond", Georgia, serif;
+}
+
+.onboarding-shell {
+  box-shadow:
+    0 34px 84px rgba(152, 131, 105, 0.14),
+    0 8px 26px rgba(102, 88, 72, 0.06);
+}
+
+.soft-editorial-surface {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.8), rgba(247, 239, 231, 0.95));
 }
