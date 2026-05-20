@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    background: #f7f3ee;
+  }
+
+  body {
+    @apply font-sans text-ink;
+    background: #f7f3ee;
+  }
+
+  body.theme-admin {
+    background-image: theme("backgroundImage.shell-glow");
+    background-attachment: fixed;
+  }
+
+  #root {
+    @apply min-h-screen;
+  }
+
+  ::selection {
+    @apply bg-teal-200 text-teal-900;
+  }
+}
+
+@layer components {
+  .admin-card {
+    @apply rounded-[22px] border border-black/5 bg-white shadow-card;
+  }
+
+  .admin-card-muted {
+    @apply rounded-[22px] border border-black/5 bg-white/80 shadow-soft backdrop-blur;
+  }
+
+  .admin-input {
+    @apply h-12 w-full rounded-[16px] border border-[#e7ded2] bg-[#fcfaf7] px-4 text-sm text-ink outline-none transition duration-200 placeholder:text-gray-400 focus:border-teal-300 focus:bg-white focus:ring-4 focus:ring-teal-100;
+  }
+
+  .admin-select {
+    @apply admin-input appearance-none pr-10;
+  }
+
+  .admin-textarea {
+    @apply min-h-[128px] w-full rounded-[16px] border border-[#e7ded2] bg-[#fcfaf7] px-4 py-3.5 text-sm leading-6 text-ink outline-none transition duration-200 placeholder:text-gray-400 focus:border-teal-300 focus:bg-white focus:ring-4 focus:ring-teal-100;
+  }
+
+  .admin-button {
+    @apply inline-flex items-center justify-center gap-2 rounded-[16px] bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white shadow-soft transition duration-200 hover:-translate-y-0.5 hover:bg-teal-800 focus:outline-none focus:ring-4 focus:ring-teal-200;
+  }
+
+  .admin-button-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-[16px] border border-[#dfe7e5] bg-white/90 px-4 py-2.5 text-sm font-semibold text-teal-800 shadow-soft transition duration-200 hover:-translate-y-0.5 hover:border-teal-200 hover:bg-[#f7fbfa];
+  }
+
+  .admin-button-danger {
+    @apply inline-flex items-center justify-center gap-2 rounded-[16px] bg-rose-400 px-4 py-2.5 text-sm font-semibold text-white shadow-soft transition duration-200 hover:-translate-y-0.5 hover:bg-rose-500 focus:outline-none focus:ring-4 focus:ring-rose-100;
+  }
+
+  .metric-kicker {
+    @apply text-[11px] font-semibold uppercase tracking-[0.24em] text-teal-600/80;
+  }
+}
+
+@layer utilities {
+  .scrollbar-subtle {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(32, 89, 84, 0.35) transparent;
+  }
+
+  .scrollbar-subtle::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .scrollbar-subtle::-webkit-scrollbar-thumb {
+    background: rgba(32, 89, 84, 0.35);
+    border-radius: 999px;
+  }
+}

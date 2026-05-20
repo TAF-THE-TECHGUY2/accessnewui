@@ -22,7 +22,7 @@ export function useTypingEffect(text, speed = 22, startDelay = 400) {
     }, startDelay);
 
     return () => clearTimeout(timeout);
-  }, [text]);
+  }, [text, speed, startDelay]);
 
   return { displayed, done };
 }

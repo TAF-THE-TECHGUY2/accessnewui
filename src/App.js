@@ -1,7 +1,1 @@
-import Onboarding from './components/Onboarding';
-
-function App() {
-  return <Onboarding />;
-}
-
-export default App;
+export { default } from "./App.jsx";
