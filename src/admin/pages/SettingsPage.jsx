@@ -203,6 +203,28 @@ function SettingsPage() {
                 }
               />
             </label>
+            <label className="flex items-start justify-between gap-4 rounded-2xl border border-sand-200 p-4 text-sm">
+              <span>
+                <span className="font-medium text-ink">
+                  Allow parallel onboarding steps
+                </span>
+                <span className="mt-1 block text-xs font-normal text-gray-500">
+                  When off, investors complete steps one at a time in order. When on,
+                  all steps are unlocked simultaneously — they can do Persona,
+                  InvestReady, and DocuSign in parallel.
+                </span>
+              </span>
+              <input
+                type="checkbox"
+                checked={settings.allowParallelOnboarding || false}
+                onChange={(event) =>
+                  setSettings((current) => ({
+                    ...current,
+                    allowParallelOnboarding: event.target.checked,
+                  }))
+                }
+              />
+            </label>
             <div>
               <label className="mb-2 block text-sm font-semibold text-ink">
                 Support email

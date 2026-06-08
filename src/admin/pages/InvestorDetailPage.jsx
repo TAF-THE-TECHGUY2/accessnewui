@@ -20,7 +20,9 @@ import LoadingState from "../components/LoadingState";
 import EmptyState from "../components/EmptyState";
 import StatusBadge from "../components/StatusBadge";
 import InvestorProcessingPanel from "../components/InvestorProcessingPanel";
+import InvestReadyPanel from "../components/InvestReadyPanel";
 import InvestorAgreements from "../components/InvestorAgreements";
+import AdminOverridePanel from "../components/AdminOverridePanel";
 import {
   getInvestorById,
   updateInvestorStatuses,
@@ -406,17 +408,41 @@ function InvestorDetailPage() {
 
       {/* Processing */}
       {activeTab === "Processing" ? (
-        <InvestorProcessingPanel
-          investor={investor}
-          onInvestorUpdated={(updated) => {
-            setInvestor(updated);
-            setStatuses({
-              kycStatus: updated.kycStatus,
-              investmentStatus: updated.investmentStatus,
-              dashboardStatus: updated.dashboardStatus,
-            });
-          }}
-        />
+        <div className="flex flex-col gap-6">
+          <InvestorProcessingPanel
+            investor={investor}
+            onInvestorUpdated={(updated) => {
+              setInvestor(updated);
+              setStatuses({
+                kycStatus: updated.kycStatus,
+                investmentStatus: updated.investmentStatus,
+                dashboardStatus: updated.dashboardStatus,
+              });
+            }}
+          />
+          <InvestReadyPanel
+            investorCode={investor.id}
+            onInvestorUpdated={(updated) => {
+              setInvestor(updated);
+              setStatuses({
+                kycStatus: updated.kycStatus,
+                investmentStatus: updated.investmentStatus,
+                dashboardStatus: updated.dashboardStatus,
+              });
+            }}
+          />
+          <AdminOverridePanel
+            investor={investor}
+            onInvestorUpdated={(updated) => {
+              setInvestor(updated);
+              setStatuses({
+                kycStatus: updated.kycStatus,
+                investmentStatus: updated.investmentStatus,
+                dashboardStatus: updated.dashboardStatus,
+              });
+            }}
+          />
+        </div>
       ) : null}
 
       {/* KYC Documents */}

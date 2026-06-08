@@ -1,10 +1,12 @@
 import { NavLink } from "react-router-dom";
 import {
   BarChart3,
+  Briefcase,
   ChevronLeft,
   ChevronRight,
   LayoutDashboard,
   Mail,
+  Megaphone,
   Settings,
   ShieldCheck,
   Users,
@@ -16,6 +18,8 @@ const navigation = [
   { label: "Dashboard", to: "/admin/dashboard", icon: LayoutDashboard },
   { label: "Investors", to: "/admin/investors", icon: Users },
   { label: "KYC Verification", to: "/admin/kyc-verification", icon: ShieldCheck },
+  { label: "Funds", to: "/admin/funds", icon: Briefcase },
+  { label: "Communications", to: "/admin/communications", icon: Megaphone },
   { label: "Email Logs", to: "/admin/email-logs", icon: Mail },
   { label: "Reports", to: "/admin/reports", icon: BarChart3 },
   { label: "Settings", to: "/admin/settings", icon: Settings },

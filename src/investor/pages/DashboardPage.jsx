@@ -18,10 +18,13 @@ import PersonaInquiry from "persona-react";
 
 import LoadingState from "../../admin/components/LoadingState";
 import EmptyState from "../../admin/components/EmptyState";
+import StripeFundingPanel from "../components/StripeFundingPanel";
+import PortalLayout from "../portal/PortalLayout";
 import {
   logout,
   me,
   recordPersonaInquiryCompletion,
+  startInvestReadyVerification,
   startPersonaInquiry,
 } from "../../services/investorPortalService";
 
@@ -48,8 +51,23 @@ function isStepCompleted(status, completionStatuses) {
 
 function buildSteps(investor) {
   const status = investor.investmentStatus;
+  const kyc = investor.kycStatus;
   const accreditation = investor.accreditationVerificationStatus;
   const docSigning = investor.documentSigningStatus;
+
+  // Identity (Persona) is "done from the investor's POV" once they've
+  // submitted or been approved. Anchor on kycStatus, not accreditation.
+  const identityComplete =
+    kyc === "submitted" ||
+    kyc === "approved" ||
+    isStepCompleted(status, [
+      "awaiting_documents",
+      "awaiting_legal_approval",
+      "awaiting_funding",
+      "funds_sent",
+      "funds_confirmed",
+      "active",
+    ]);
 
   return [
     {
@@ -60,32 +78,22 @@ function buildSteps(investor) {
       icon: UserSearch,
       provider: "Persona",
       action: "persona",
-      complete:
-        accreditation === "verification_submitted" ||
-        accreditation === "verification_approved" ||
-        isStepCompleted(status, [
-          "awaiting_documents",
-          "awaiting_legal_approval",
-          "awaiting_funding",
-          "funds_sent",
-          "funds_confirmed",
-          "active",
-        ]),
-      current:
-        status === "awaiting_kyc" ||
-        status === "awaiting_accreditation_verification",
+      complete: identityComplete,
+      current: !identityComplete && status === "awaiting_kyc",
     },
     {
       key: "accreditation",
       title: "Verify accredited status",
       description:
-        "Confirm you meet the SEC accreditation criteria. Powered by verifyinvestor.com.",
+        "Confirm you meet the SEC accreditation criteria. Powered by InvestReady.",
       icon: ShieldCheck,
-      provider: "verifyinvestor.com",
+      provider: "InvestReady",
       action: "verify-investor",
-      placeholder: true,
       complete: accreditation === "verification_approved",
-      current: status === "awaiting_documents" && accreditation !== "verification_approved",
+      current:
+        accreditation === "verification_required" ||
+        (status === "awaiting_accreditation_verification" &&
+          accreditation !== "verification_approved"),
     },
     {
       key: "documents",
@@ -102,13 +110,15 @@ function buildSteps(investor) {
     },
     {
       key: "funding",
-      title: "Receive funding instructions",
+      title: "Fund your subscription",
       description:
-        "Once your application is approved, you'll get wire instructions here.",
+        "Link your bank via Stripe and pay your commitment via ACH. Settles in 3-5 business days.",
       icon: PiggyBank,
+      provider: "Stripe",
       placeholder: true,
-      complete: ["funds_sent", "funds_confirmed", "active"].includes(status),
-      current: status === "awaiting_funding",
+      complete: ["funds_confirmed", "active"].includes(status),
+      current:
+        status === "awaiting_funding" || status === "funds_sent",
     },
     {
       key: "active",
@@ -322,13 +332,21 @@ function DashboardPage() {
   }, [steps, investor]);
 
   const handleStart = async (step) => {
-    if (step.action !== "persona") return;
     setActionError(null);
     setBusyStep(step.key);
     try {
-      const refreshed = await startPersonaInquiry();
-      setInvestor(refreshed);
-      setShowPersona(true);
+      if (step.action === "persona") {
+        const refreshed = await startPersonaInquiry();
+        setInvestor(refreshed);
+        setShowPersona(true);
+      } else if (step.action === "verify-investor") {
+        const response = await startInvestReadyVerification();
+        if (response?.authorizationUrl) {
+          window.location.href = response.authorizationUrl;
+          return;
+        }
+        setActionError("InvestReady did not return an authorization URL.");
+      }
     } catch (err) {
       setActionError(
         err?.response?.data?.message ||
@@ -378,6 +396,16 @@ function DashboardPage() {
     );
   }
 
+  // Fully-onboarded investors land in the post-onboarding portal (Annex 3 spec).
+  // The onboarding tracker below is shown until ALL steps are complete — gating
+  // just on `investment_status === "active"` is too loose because parallel mode
+  // (or admin overrides) can flip funding to active while other steps are still
+  // pending. Every step must report complete: true.
+  const onboardingComplete = steps.length > 0 && steps.every((s) => s.complete);
+  if (onboardingComplete) {
+    return <PortalLayout investor={investor} setInvestor={setInvestor} />;
+  }
+
   return (
     <div className="min-h-screen bg-[#f5f5f5] py-14">
       <div className="pointer-events-none fixed inset-0">
@@ -419,11 +447,33 @@ function DashboardPage() {
 
         <ol className="space-y-4">
           {steps.map((step, index) => {
+            const parallelMode = investor?.platform?.allowParallelOnboarding === true;
             const previousCompleted = steps
               .slice(0, index)
               .every((s) => s.complete);
-            const isCurrent = step.key === currentStepKey;
-            const locked = !step.complete && !previousCompleted;
+            // Parallel mode: every incomplete step is treated as current and
+            // none are locked. Sequential mode keeps the strict ordering.
+            const isCurrent = parallelMode
+              ? !step.complete
+              : step.key === currentStepKey;
+            const locked = parallelMode
+              ? false
+              : !step.complete && !previousCompleted;
+
+            // When the funding step is current, the StripeFundingPanel is the
+            // entire UI — it carries its own header, status, and action button.
+            // Skip the placeholder StepRow to avoid the duplicate card.
+            if (step.key === "funding" && isCurrent && !locked && !step.complete) {
+              return (
+                <li key={step.key}>
+                  <StripeFundingPanel
+                    investor={investor}
+                    onInvestorUpdated={(updated) => setInvestor(updated)}
+                  />
+                </li>
+              );
+            }
+
             return (
               <StepRow
                 key={step.key}

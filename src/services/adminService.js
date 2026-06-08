@@ -146,3 +146,106 @@ export const downloadAgreementPdf = async (envelopeId, filename) => {
   link.remove();
   window.URL.revokeObjectURL(url);
 };
+
+export const getInvestReadyStatus = async (investorCode) => {
+  const { data } = await api.get(`/investors/${investorCode}/investready`);
+  return data;
+};
+
+export const resyncInvestReady = async (investorCode) => {
+  const { data } = await api.post(`/investors/${investorCode}/investready/resync`);
+  return data;
+};
+
+// Fund management (Phase 5A)
+export const fetchAdminFunds = async () => {
+  const { data } = await api.get("/funds");
+  return data.data;
+};
+
+export const fetchAdminFund = async (code) => {
+  const { data } = await api.get(`/funds/${code}`);
+  return data;
+};
+
+export const createAdminFund = async (payload) => {
+  const { data } = await api.post("/funds", payload);
+  return data;
+};
+
+export const updateAdminFund = async (code, payload) => {
+  const { data } = await api.patch(`/funds/${code}`, payload);
+  return data;
+};
+
+export const addFundUnitPrice = async (code, payload) => {
+  const { data } = await api.post(`/funds/${code}/unit-prices`, payload);
+  return data;
+};
+
+export const deleteFundUnitPrice = async (id) => {
+  const { data } = await api.delete(`/unit-prices/${id}`);
+  return data;
+};
+
+export const declareFundDistribution = async (code, payload) => {
+  const { data } = await api.post(`/funds/${code}/distributions`, payload);
+  return data;
+};
+
+export const deleteFundDistribution = async (id) => {
+  const { data } = await api.delete(`/distributions/${id}`);
+  return data;
+};
+
+export const declareFundFee = async (code, payload) => {
+  const { data } = await api.post(`/funds/${code}/fees`, payload);
+  return data;
+};
+
+export const deleteFundFee = async (id) => {
+  const { data } = await api.delete(`/fees/${id}`);
+  return data;
+};
+
+// Communications (Phase 4 admin)
+export const fetchAdminCommunications = async () => {
+  const { data } = await api.get("/communications");
+  return data.data;
+};
+
+export const createAdminCommunication = async (payload) => {
+  const { data } = await api.post("/communications", payload);
+  return data;
+};
+
+export const updateAdminCommunication = async (id, payload) => {
+  const { data } = await api.patch(`/communications/${id}`, payload);
+  return data;
+};
+
+export const deleteAdminCommunication = async (id) => {
+  const { data } = await api.delete(`/communications/${id}`);
+  return data;
+};
+
+// Manual override actions — bypass integrations + force statuses
+const runOverrideAction = async (investorCode, action, payload) => {
+  const { data } = await api.post(`/investors/${investorCode}/override/${action}`, payload);
+  return data.data;
+};
+
+export const overrideApproveKyc = (investorCode, reason) =>
+  runOverrideAction(investorCode, "approve-kyc", { reason });
+
+export const overrideApproveAccreditation = (investorCode, reason) =>
+  runOverrideAction(investorCode, "approve-accreditation", { reason });
+
+export const overrideMarkDocumentsSigned = (investorCode, reason) =>
+  runOverrideAction(investorCode, "mark-documents-signed", { reason });
+
+export const overrideMarkFunded = (investorCode, amount, reason) =>
+  runOverrideAction(investorCode, "mark-funded", { reason, amount });
+
+export const overrideFullyActivate = (investorCode, amount, reason) =>
+  runOverrideAction(investorCode, "fully-activate", { reason, amount });
