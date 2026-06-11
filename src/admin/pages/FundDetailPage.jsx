@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Trash2 } from "lucide-react";
 
+import DestructiveDeleteModal from "../components/DestructiveDeleteModal";
 import {
   addFundUnitPrice,
   declareFundDistribution,
   declareFundFee,
+  deleteAdminFund,
   deleteFundDistribution,
   deleteFundFee,
   deleteFundUnitPrice,
@@ -248,8 +250,10 @@ function DeclareFeeForm({ fundCode, onDeclared }) {
 
 function FundDetailPage() {
   const { code } = useParams();
+  const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const reload = () => fetchAdminFund(code).then(setData);
 
@@ -257,6 +261,11 @@ function FundDetailPage() {
     setLoading(true);
     reload().finally(() => setLoading(false));
   }, [code]);
+
+  const handleDelete = async (confirmCode) => {
+    await deleteAdminFund(code, confirmCode);
+    navigate("/admin/funds", { replace: true });
+  };
 
   if (loading) {
     return <p className="text-sm text-gray-500">Loading…</p>;
@@ -416,6 +425,37 @@ function FundDetailPage() {
           </ul>
         </div>
       </Section>
+
+      <section className="rounded-[22px] border-2 border-red-200 bg-red-50/30 p-6">
+        <h3 className="font-semibold text-red-900">Danger zone</h3>
+        <p className="mt-1 text-sm text-red-800">
+          Deleting this fund permanently removes all investor holdings, unit
+          prices, distributions, fees, and fund-scoped documents. Cannot be
+          undone.
+        </p>
+        <button
+          type="button"
+          onClick={() => setDeleteOpen(true)}
+          className="mt-4 inline-flex items-center gap-2 rounded-[10px] border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-700 transition hover:bg-red-100"
+        >
+          <Trash2 className="h-4 w-4" /> Delete fund
+        </button>
+      </section>
+
+      <DestructiveDeleteModal
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        onConfirm={handleDelete}
+        code={code}
+        title="Delete this fund?"
+        subtitle="This action cascades — every record tied to this fund will be removed."
+        impact={{
+          holdings: holdingsCount,
+          unitPrices: unitPrices.length,
+          distributions: recentDistributions.length,
+          fees: recentFees.length,
+        }}
+      />
     </div>
   );
 }

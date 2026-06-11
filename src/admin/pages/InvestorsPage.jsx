@@ -23,6 +23,7 @@ import {
 import DataTable from "../components/DataTable";
 import StatusBadge from "../components/StatusBadge";
 import ActionMenu from "../components/ActionMenu";
+import CreateInvestorModal from "../components/CreateInvestorModal";
 import { getInvestors, updateInvestorStatuses } from "../../services/adminService";
 import { formatCurrency, formatDate, getInitials } from "../../utils/formatters";
 
@@ -37,6 +38,7 @@ function InvestorsPage() {
 
   const [investors, setInvestors] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [createOpen, setCreateOpen] = useState(false);
   const [search, setSearch] = useState("");
   const deferredSearch = useDeferredValue(search);
 
@@ -275,6 +277,7 @@ function InvestorsPage() {
 
           <button
             type="button"
+            onClick={() => setCreateOpen(true)}
             className="inline-flex h-11 items-center justify-center gap-2 rounded-[18px] bg-[#0f4f4f] px-5 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(15,61,62,0.18)] transition hover:bg-[#0b3f3f]"
           >
             <Plus className="h-4 w-4" />
@@ -586,6 +589,16 @@ function InvestorsPage() {
           </div>
         </div>
       ) : null}
+
+      <CreateInvestorModal
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onCreated={(investor) => {
+          // Prepend the new investor to the list and navigate to their detail page
+          setInvestors((curr) => [investor, ...curr]);
+          navigate(`/admin/investors/${investor.id}`);
+        }}
+      />
     </div>
   );
 }

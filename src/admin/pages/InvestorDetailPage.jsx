@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   Activity,
   ArrowLeft,
@@ -10,6 +10,7 @@ import {
   MessageSquare,
   Phone,
   Save,
+  Trash2,
   ShieldCheck,
   StickyNote,
   User,
@@ -24,9 +25,11 @@ import InvestReadyPanel from "../components/InvestReadyPanel";
 import InvestorAgreements from "../components/InvestorAgreements";
 import AdminOverridePanel from "../components/AdminOverridePanel";
 import {
+  deleteInvestor,
   getInvestorById,
   updateInvestorStatuses,
 } from "../../services/adminService";
+import DestructiveDeleteModal from "../components/DestructiveDeleteModal";
 import {
   formatCurrency,
   formatDate,
@@ -75,10 +78,12 @@ function InfoRow({ label, value }) {
 
 function InvestorDetailPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
 
   const [investor, setInvestor] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("Overview");
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [statuses, setStatuses] = useState({
     kycStatus: "pending",
     investmentStatus: "awaiting_kyc",
@@ -589,6 +594,40 @@ function InvestorDetailPage() {
           )}
         </section>
       ) : null}
+
+      <section className="rounded-[22px] border-2 border-red-200 bg-red-50/30 p-6">
+        <h3 className="font-semibold text-red-900">Danger zone</h3>
+        <p className="mt-1 text-sm text-red-800">
+          Deleting this investor permanently removes their KYC documents,
+          activity log, holdings, payment confirmations, integration history,
+          and Sanctum tokens. Cannot be undone.
+        </p>
+        <button
+          type="button"
+          onClick={() => setDeleteOpen(true)}
+          className="mt-4 inline-flex items-center gap-2 rounded-[10px] border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-700 transition hover:bg-red-100"
+        >
+          <Trash2 className="h-4 w-4" /> Delete investor
+        </button>
+      </section>
+
+      <DestructiveDeleteModal
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        onConfirm={async (confirmCode) => {
+          await deleteInvestor(investor.id, confirmCode);
+          navigate("/admin/investors", { replace: true });
+        }}
+        code={investor?.id}
+        title="Delete this investor?"
+        subtitle={`This will permanently remove ${investor?.name} (${investor?.email}) and every record tied to them.`}
+        impact={{
+          documents: investor?.documents?.length || 0,
+          activities: investor?.activity?.length || 0,
+          messages: investor?.messages?.length || 0,
+          notes: investor?.notes?.length || 0,
+        }}
+      />
     </div>
   );
 }

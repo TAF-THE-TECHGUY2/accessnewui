@@ -178,6 +178,21 @@ export const updateAdminFund = async (code, payload) => {
   return data;
 };
 
+export const deleteAdminFund = async (code, confirm) => {
+  const { data } = await api.delete(`/funds/${code}`, { data: { confirm } });
+  return data;
+};
+
+export const deleteInvestor = async (code, confirm) => {
+  const { data } = await api.delete(`/investors/${code}`, { data: { confirm } });
+  return data;
+};
+
+export const createAdminInvestor = async (payload) => {
+  const { data } = await api.post("/investors", payload);
+  return data.data;
+};
+
 export const addFundUnitPrice = async (code, payload) => {
   const { data } = await api.post(`/funds/${code}/unit-prices`, payload);
   return data;
