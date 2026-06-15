@@ -2,10 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   AlertCircle,
+  ArrowRight,
   BadgeCheck,
   CheckCircle2,
-  ExternalLink,
   FileSignature,
+  Landmark,
   Loader2,
   LogOut,
   Lock,
@@ -20,6 +21,7 @@ import LoadingState from "../../admin/components/LoadingState";
 import EmptyState from "../../admin/components/EmptyState";
 import StripeFundingPanel from "../components/StripeFundingPanel";
 import PortalLayout from "../portal/PortalLayout";
+import logo from "../../assets/Logo.png";
 import {
   logout,
   me,
@@ -132,7 +134,7 @@ function buildSteps(investor) {
   ];
 }
 
-function StepRow({ step, onStart, isCurrent, locked, busy }) {
+function StepRow({ step, stepNumber, onStart, isCurrent, locked, busy }) {
   const Icon = step.icon;
   const stateLabel = step.complete
     ? "Completed"
@@ -145,39 +147,42 @@ function StepRow({ step, onStart, isCurrent, locked, busy }) {
     ? "border-black/10 bg-white"
     : isCurrent
     ? "border-black bg-white shadow-[0_14px_28px_rgba(17,24,39,0.08)]"
-    : "border-black/10 bg-white/60";
+    : "border-black/10 bg-white";
 
   return (
-    <li className={`rounded-[22px] border p-6 transition ${ring}`}>
+    <li className={`rounded-[20px] border p-6 transition ${ring}`}>
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="flex items-start gap-4">
-          <div
-            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] border ${
-              step.complete
-                ? "border-black/10 bg-black text-white"
-                : isCurrent
-                ? "border-black/15 bg-[#f5f5f5] text-[#111111]"
-                : "border-black/10 bg-white text-[#9ca3af]"
-            }`}
-          >
-            {step.complete ? (
-              <CheckCircle2 className="h-5 w-5" />
-            ) : locked ? (
-              <Lock className="h-5 w-5" />
-            ) : (
-              <Icon className="h-5 w-5" />
-            )}
+          {/* Icon with optional lock overlay for locked steps */}
+          <div className="relative shrink-0">
+            <div
+              className={`flex h-12 w-12 items-center justify-center rounded-[14px] border ${
+                step.complete
+                  ? "border-black/10 bg-black text-white"
+                  : isCurrent
+                  ? "border-black/15 bg-[#f7f5f1] text-[#111111]"
+                  : "border-black/10 bg-[#f7f5f1] text-[#9ca3af]"
+              }`}
+            >
+              {step.complete ? <CheckCircle2 className="h-5 w-5" /> : <Icon className="h-5 w-5" />}
+            </div>
+            {locked && !step.complete ? (
+              <span className="absolute -bottom-1 -right-1 grid h-5 w-5 place-items-center rounded-full border border-black/10 bg-white text-[#6b7280]">
+                <Lock className="h-3 w-3" />
+              </span>
+            ) : null}
           </div>
 
           <div>
-            <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-[#6b7280]">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#6b7280]">
               {stateLabel}
               {step.provider ? ` · ${step.provider}` : ""}
             </p>
-            <p className="font-display mt-2 text-[20px] leading-tight text-[#111111]">
-              {step.title}
-            </p>
-            <p className="mt-2 max-w-xl text-[14px] leading-7 text-[#4b5563]">
+            <h3 className="font-display mt-1.5 flex items-baseline gap-2 text-[20px] leading-tight text-[#111111]">
+              <span className="text-[#9ca3af]">{stepNumber}.</span>
+              <span>{step.title}</span>
+            </h3>
+            <p className="mt-2 max-w-xl text-[14px] leading-6 text-[#4b5563]">
               {step.description}
             </p>
             {step.placeholder && isCurrent ? (
@@ -190,7 +195,7 @@ function StepRow({ step, onStart, isCurrent, locked, busy }) {
 
         <div className="flex shrink-0 items-center">
           {step.complete ? (
-            <span className="inline-flex items-center gap-1.5 rounded-[12px] border border-black/10 bg-white px-3 py-2 text-[12px] font-medium text-[#1f2937] shadow-[0_10px_22px_rgba(17,24,39,0.05)]">
+            <span className="inline-flex items-center gap-1.5 rounded-[12px] border border-black/10 bg-white px-3 py-2 text-[12px] font-medium text-[#1f2937]">
               <BadgeCheck className="h-4 w-4" /> Done
             </span>
           ) : isCurrent && !step.placeholder && step.action ? (
@@ -198,10 +203,16 @@ function StepRow({ step, onStart, isCurrent, locked, busy }) {
               type="button"
               disabled={busy}
               onClick={() => onStart(step)}
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-[14px] bg-black px-5 text-[14px] font-medium text-white shadow-[0_14px_24px_rgba(17,24,39,0.24)] transition hover:bg-[#1f2937] active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-[#9ca3af] disabled:shadow-none"
+              className="group inline-flex h-11 items-center justify-center gap-2 rounded-[12px] bg-black px-5 text-[14px] font-medium text-white shadow-[0_14px_24px_rgba(17,24,39,0.18)] transition hover:bg-[#1f2937] active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-[#9ca3af] disabled:shadow-none"
             >
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-              Start
+              {busy ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <>
+                  Start
+                  <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+                </>
+              )}
             </button>
           ) : null}
         </div>
@@ -406,53 +417,84 @@ function DashboardPage() {
     return <PortalLayout investor={investor} setInvestor={setInvestor} />;
   }
 
-  return (
-    <div className="min-h-screen bg-[#f5f5f5] py-14">
-      <div className="pointer-events-none fixed inset-0">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(255,255,255,0.8),transparent_26%),radial-gradient(circle_at_82%_16%,rgba(229,231,235,0.85),transparent_30%),linear-gradient(135deg,#f5f5f5_0%,#ffffff_52%,#f3f4f6_100%)]" />
-      </div>
+  const completedSteps = steps.filter((s) => s.complete).length;
+  const totalSteps = steps.length;
+  const progressPercent = totalSteps > 0 ? (completedSteps / totalSteps) * 100 : 0;
 
+  return (
+    <div className="min-h-screen bg-[#f8f8f6] py-10">
       <div className="relative mx-auto max-w-[960px] px-6">
-        <header className="mb-10 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-          <div>
-            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-[#6b7280]">
-              Access Properties · Investor Portal
-            </p>
-            <h1 className="font-display mt-4 text-[44px] leading-[1.02] text-[#111111] sm:text-[52px]">
-              Welcome, {investor.name?.split(" ")[0]}.
-            </h1>
-            <div className="mt-6 h-px w-[176px] bg-black/10" />
-            <p className="mt-6 max-w-2xl text-[16px] leading-8 text-[#4b5563]">
-              Complete the following steps to activate your investment. Each
-              step is handled by a trusted partner.
-            </p>
+        <header className="mb-8">
+          {/* Top row — logo + sign out */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <img src={logo} alt="" aria-hidden="true" className="h-9 w-9 object-contain" />
+              <div className="h-6 w-px bg-black/15" />
+              <p className="text-[12px] font-medium uppercase tracking-[0.22em] text-[#111111]">
+                Investor Portal
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="inline-flex h-10 items-center gap-2 rounded-[12px] border border-black/15 bg-white px-4 text-[13px] font-medium text-[#1f2937] transition hover:border-black/40"
+            >
+              <LogOut className="h-4 w-4" />
+              Sign out
+            </button>
           </div>
 
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="inline-flex h-11 items-center gap-2 self-start rounded-[14px] border border-black/10 bg-white px-4 text-[14px] font-medium text-[#1f2937] shadow-[0_10px_22px_rgba(17,24,39,0.06)] transition hover:-translate-y-[1px] hover:border-black/35"
-          >
-            <LogOut className="h-4 w-4" />
-            Sign out
-          </button>
+          {/* Welcome */}
+          <h1 className="font-display mt-8 text-[44px] leading-[1.02] text-[#111111] sm:text-[52px]">
+            Welcome, {investor.name?.split(" ")[0]}.
+          </h1>
+
+          {/* Progress */}
+          <div className="mt-5 flex items-center gap-4">
+            <CheckCircle2 className="h-5 w-5 text-[#111111]" />
+            <p className="text-[13px] text-[#4b5563]">
+              <strong className="text-[#111111]">{completedSteps} of {totalSteps}</strong>{" "}
+              steps completed
+            </p>
+            <div className="h-1.5 max-w-[280px] flex-1 overflow-hidden rounded-full bg-black/10">
+              <div
+                className="h-full rounded-full bg-[#111111] transition-all"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Path card */}
+          <div className="mt-6 inline-flex items-center gap-3 rounded-[14px] border border-black/10 bg-white px-4 py-3">
+            <span className="grid h-9 w-9 place-items-center rounded-full bg-[#f7f5f1] text-[#111111]">
+              <Landmark className="h-4 w-4" />
+            </span>
+            <div className="flex items-baseline gap-2">
+              <p className="text-[13px] font-semibold text-[#111111]">Direct Access Path</p>
+              <span className="text-[12px] text-[#9ca3af]">•</span>
+              <p className="text-[12px] text-[#4b5563]">Accredited Investor Offering</p>
+            </div>
+          </div>
+
+          <p className="mt-6 max-w-2xl text-[14px] leading-7 text-[#4b5563]">
+            Follow the steps below to finalize your investment with Access
+            Properties. Each step is handled by a trusted partner.
+          </p>
         </header>
 
         {actionError ? (
-          <div className="mb-6 flex items-start gap-3 rounded-[16px] border border-[#ba645b]/20 bg-white p-4 text-[14px] text-[#ba645b] shadow-[0_10px_22px_rgba(17,24,39,0.05)]">
+          <div className="mb-6 flex items-start gap-3 rounded-[14px] border border-[#ba645b]/20 bg-white p-4 text-[13px] text-[#ba645b]">
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
             <p>{actionError}</p>
           </div>
         ) : null}
 
-        <ol className="space-y-4">
+        <ol className="space-y-3">
           {steps.map((step, index) => {
             const parallelMode = investor?.platform?.allowParallelOnboarding === true;
             const previousCompleted = steps
               .slice(0, index)
               .every((s) => s.complete);
-            // Parallel mode: every incomplete step is treated as current and
-            // none are locked. Sequential mode keeps the strict ordering.
             const isCurrent = parallelMode
               ? !step.complete
               : step.key === currentStepKey;
@@ -460,9 +502,6 @@ function DashboardPage() {
               ? false
               : !step.complete && !previousCompleted;
 
-            // When the funding step is current, the StripeFundingPanel is the
-            // entire UI — it carries its own header, status, and action button.
-            // Skip the placeholder StepRow to avoid the duplicate card.
             if (step.key === "funding" && isCurrent && !locked && !step.complete) {
               return (
                 <li key={step.key}>
@@ -478,6 +517,7 @@ function DashboardPage() {
               <StepRow
                 key={step.key}
                 step={step}
+                stepNumber={index + 1}
                 onStart={handleStart}
                 isCurrent={isCurrent && !locked}
                 locked={locked}
@@ -487,16 +527,15 @@ function DashboardPage() {
           })}
         </ol>
 
-        <footer className="mt-12 flex flex-wrap items-center justify-between gap-4 text-[12px] text-[#6b7280]">
-          <p>Need help? Contact your relationship manager.</p>
+        <footer className="mt-10 text-[13px] text-[#6b7280]">
+          Need help?{" "}
           <a
-            href={WEFUNDER_URL}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-1 underline decoration-black/30 underline-offset-[5px] transition hover:text-[#111111]"
+            href={`mailto:support@accessproperties.com`}
+            className="text-[#111111] underline decoration-black/30 underline-offset-[5px] transition hover:decoration-black"
           >
-            Crowdfunding partner <ExternalLink className="h-3 w-3" />
-          </a>
+            Contact us
+          </a>{" "}
+          and we'll get back to you.
         </footer>
       </div>
 
