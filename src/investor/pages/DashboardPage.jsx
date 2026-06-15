@@ -6,7 +6,6 @@ import {
   BadgeCheck,
   CheckCircle2,
   FileSignature,
-  Landmark,
   Loader2,
   LogOut,
   Lock,
@@ -21,7 +20,7 @@ import LoadingState from "../../admin/components/LoadingState";
 import EmptyState from "../../admin/components/EmptyState";
 import StripeFundingPanel from "../components/StripeFundingPanel";
 import PortalLayout from "../portal/PortalLayout";
-import logo from "../../assets/Logo.png";
+import OnboardingShell from "../../components/onboarding/OnboardingShell";
 import {
   logout,
   me,
@@ -417,71 +416,17 @@ function DashboardPage() {
     return <PortalLayout investor={investor} setInvestor={setInvestor} />;
   }
 
-  const completedSteps = steps.filter((s) => s.complete).length;
-  const totalSteps = steps.length;
-  const progressPercent = totalSteps > 0 ? (completedSteps / totalSteps) * 100 : 0;
+  const currentStepIndex = steps.findIndex((s) => !s.complete);
+  const activeDot = currentStepIndex === -1 ? steps.length - 1 : currentStepIndex;
 
   return (
-    <div className="min-h-screen bg-[#f8f8f6] py-10">
-      <div className="relative mx-auto max-w-[960px] px-6">
-        <header className="mb-8">
-          {/* Top row — logo + sign out */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <img src={logo} alt="" aria-hidden="true" className="h-9 w-9 object-contain" />
-              <div className="h-6 w-px bg-black/15" />
-              <p className="text-[12px] font-medium uppercase tracking-[0.22em] text-[#111111]">
-                Investor Portal
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="inline-flex h-10 items-center gap-2 rounded-[12px] border border-black/15 bg-white px-4 text-[13px] font-medium text-[#1f2937] transition hover:border-black/40"
-            >
-              <LogOut className="h-4 w-4" />
-              Sign out
-            </button>
-          </div>
-
-          {/* Welcome */}
-          <h1 className="font-display mt-8 text-[44px] leading-[1.02] text-[#111111] sm:text-[52px]">
-            Welcome, {investor.name?.split(" ")[0]}.
-          </h1>
-
-          {/* Progress */}
-          <div className="mt-5 flex items-center gap-4">
-            <CheckCircle2 className="h-5 w-5 text-[#111111]" />
-            <p className="text-[13px] text-[#4b5563]">
-              <strong className="text-[#111111]">{completedSteps} of {totalSteps}</strong>{" "}
-              steps completed
-            </p>
-            <div className="h-1.5 max-w-[280px] flex-1 overflow-hidden rounded-full bg-black/10">
-              <div
-                className="h-full rounded-full bg-[#111111] transition-all"
-                style={{ width: `${progressPercent}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Path card */}
-          <div className="mt-6 inline-flex items-center gap-3 rounded-[14px] border border-black/10 bg-white px-4 py-3">
-            <span className="grid h-9 w-9 place-items-center rounded-full bg-[#f7f5f1] text-[#111111]">
-              <Landmark className="h-4 w-4" />
-            </span>
-            <div className="flex items-baseline gap-2">
-              <p className="text-[13px] font-semibold text-[#111111]">Direct Access Path</p>
-              <span className="text-[12px] text-[#9ca3af]">•</span>
-              <p className="text-[12px] text-[#4b5563]">Accredited Investor Offering</p>
-            </div>
-          </div>
-
-          <p className="mt-6 max-w-2xl text-[14px] leading-7 text-[#4b5563]">
-            Follow the steps below to finalize your investment with Access
-            Properties. Each step is handled by a trusted partner.
-          </p>
-        </header>
-
+    <OnboardingShell
+      dots={steps.length}
+      activeDot={activeDot}
+      stepLabel={`STEP ${activeDot + 1} OF ${steps.length}`}
+      showFootnotes={false}
+    >
+      <div className="mx-auto max-w-[960px]">
         {actionError ? (
           <div className="mb-6 flex items-start gap-3 rounded-[14px] border border-[#ba645b]/20 bg-white p-4 text-[13px] text-[#ba645b]">
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
@@ -527,15 +472,24 @@ function DashboardPage() {
           })}
         </ol>
 
-        <footer className="mt-10 text-[13px] text-[#6b7280]">
-          Need help?{" "}
-          <a
-            href={`mailto:support@accessproperties.com`}
-            className="text-[#111111] underline decoration-black/30 underline-offset-[5px] transition hover:decoration-black"
+        <footer className="mt-10 flex items-center justify-between text-[13px] text-[#6b7280]">
+          <p>
+            Need help?{" "}
+            <a
+              href={`mailto:support@accessproperties.com`}
+              className="text-[#111111] underline decoration-black/30 underline-offset-[5px] transition hover:decoration-black"
+            >
+              Contact us
+            </a>
+          </p>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="inline-flex items-center gap-1.5 text-[12px] text-[#6b7280] underline decoration-black/20 underline-offset-[5px] transition hover:text-[#111111]"
           >
-            Contact us
-          </a>{" "}
-          and we'll get back to you.
+            <LogOut className="h-3.5 w-3.5" />
+            Sign out
+          </button>
         </footer>
       </div>
 
@@ -547,7 +501,7 @@ function DashboardPage() {
           onError={(message) => setActionError(message)}
         />
       ) : null}
-    </div>
+    </OnboardingShell>
   );
 }
 
