@@ -44,17 +44,17 @@ const PATHS = [
   },
 ];
 
-function AmountInput({ value, onChange, placeholder = "Enter amount" }) {
+function AmountInput({ value, onChange, error, placeholder = "Enter amount" }) {
   return (
-    <div className="flex h-11 items-center rounded-[10px] border border-black/15 bg-white focus-within:border-[#111111]">
-      <span className="grid h-full w-10 place-items-center text-[14px] text-[#9ca3af]">$</span>
+    <div className={`flex h-12 items-center rounded-[10px] border bg-white transition focus-within:border-[#111111] ${error ? "border-red-300" : "border-black/15"}`}>
+      <span className="grid h-full w-10 place-items-center text-[15px] text-[#9ca3af]">$</span>
       <input
         type="text"
         inputMode="numeric"
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        className="h-full flex-1 bg-transparent pr-3 text-[13px] text-[#111111] outline-none placeholder:text-[#9ca3af]"
+        className="h-full flex-1 bg-transparent pr-3 text-[14px] text-[#111111] outline-none placeholder:text-[#9ca3af]"
       />
     </div>
   );
@@ -73,45 +73,44 @@ function PathCard({ path, selected, amount, onAmountChange, onSelect, error }) {
           onSelect();
         }
       }}
-      className={`cursor-pointer rounded-[16px] border bg-white p-5 transition sm:p-6 ${
+      className={`cursor-pointer rounded-[16px] border bg-white p-6 transition sm:p-7 ${
         selected
           ? "border-[#111111] shadow-[0_12px_28px_rgba(17,24,39,0.08)]"
           : "border-black/10 hover:border-black/25"
       }`}
     >
-      {/* Top row — icon + title/subtitle */}
       <div className="flex items-start gap-4">
         <span
-          className={`grid h-12 w-12 shrink-0 place-items-center rounded-full ${path.iconWrapClass}`}
+          className={`grid h-14 w-14 shrink-0 place-items-center rounded-full ${path.iconWrapClass}`}
         >
-          <Icon className="h-5 w-5" />
+          <Icon className="h-6 w-6" />
         </span>
         <div className="flex-1">
-          <h3 className="font-display text-[18px] leading-tight text-[#111111] sm:text-[20px]">
+          <h3 className="font-display text-[20px] leading-tight text-[#111111] sm:text-[22px]">
             {path.title}
           </h3>
-          <p className="mt-1 text-[13px] leading-5 text-[#4b5563]">
+          <p className="mt-1.5 text-[14px] leading-6 text-[#4b5563]">
             {path.subtitle}
           </p>
         </div>
       </div>
 
-      {/* Minimum Investment label */}
-      <div className="mt-4 flex items-center gap-2 text-[13px] text-[#4b5563]">
+      <div className="mt-4 flex items-center gap-2 text-[14px] text-[#4b5563]">
         <span>Minimum Investment:</span>
         <strong className="text-[#111111]">{formatCurrency(path.minimum)}</strong>
       </div>
 
-      {/* Amount input — full width */}
       <div className="mt-2" onClick={(e) => e.stopPropagation()}>
-        <AmountInput value={amount} onChange={onAmountChange} />
+        <AmountInput value={amount} onChange={onAmountChange} error={error} />
       </div>
       {error ? (
-        <p className="mt-1.5 text-[11px] text-red-600">{error}</p>
+        <div className="mt-2 flex items-start gap-2 text-red-600">
+          <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          <p className="text-[12px] leading-5">{error}</p>
+        </div>
       ) : null}
 
-      {/* Radio + select label at the bottom */}
-      <div className="mt-4 flex items-center gap-2.5">
+      <div className="mt-5 flex items-center gap-2.5">
         <span
           className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 transition ${
             selected ? "border-[#111111] bg-[#111111]" : "border-black/25 bg-white"
@@ -119,7 +118,7 @@ function PathCard({ path, selected, amount, onAmountChange, onSelect, error }) {
         >
           {selected ? <Check className="h-3 w-3 text-white" strokeWidth={3} /> : null}
         </span>
-        <p className={`text-[13px] font-medium ${selected ? "text-[#111111]" : "text-[#1f2937]"}`}>
+        <p className={`text-[14px] font-medium ${selected ? "text-[#111111]" : "text-[#1f2937]"}`}>
           {path.selectLabel}
         </p>
       </div>
@@ -145,18 +144,28 @@ function InvestmentPath({
 
   const handleAmountChange = (id) => (event) => {
     const raw = event.target.value.replace(/[^\d]/g, "");
-    setAmounts((curr) => ({
-      ...curr,
-      [id]: raw ? Number(raw).toLocaleString("en-US") : "",
-    }));
-    if (errors[id]) {
-      setErrors((curr) => {
-        const next = { ...curr };
-        delete next[id];
-        return next;
-      });
-    }
+    const next = raw ? Number(raw).toLocaleString("en-US") : "";
+    setAmounts((curr) => ({ ...curr, [id]: next }));
+
+    // Real-time validation against the path minimum
+    const pathDef = PATHS.find((p) => p.id === id);
+    const parsed = parseAmount(next);
+    setErrors((curr) => {
+      const updated = { ...curr };
+      delete updated.path;
+      if (next && parsed > 0 && parsed < pathDef.minimum) {
+        updated[id] = `Minimum investment is ${formatCurrency(pathDef.minimum)}`;
+      } else {
+        delete updated[id];
+      }
+      return updated;
+    });
   };
+
+  // The currently-selected path's amount is valid (and present) — used to gate Continue
+  const selectedPath = PATHS.find((p) => p.id === path);
+  const parsedAmount = selectedPath ? parseAmount(amounts[selectedPath.id]) : 0;
+  const amountValid = !!selectedPath && parsedAmount >= selectedPath.minimum;
 
   const handleContinue = async () => {
     setApiError("");
@@ -199,13 +208,13 @@ function InvestmentPath({
   };
 
   return (
-    <OnboardingShell dots={5} activeDot={3} dotLabel="INVESTMENT PATH" showFootnotes={false}>
+    <OnboardingShell dots={5} activeDot={3} dotLabel="INVESTMENT PATH">
       <div>
         {/* Header */}
-        <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-[#6b7280]">
+        <p className="text-[13px] font-medium uppercase tracking-[0.18em] text-[#6b7280]">
           Investment Path
         </p>
-        <h1 className="font-display mt-2 text-[36px] leading-[1.05] text-[#111111] xl:text-[44px]">
+        <h1 className="font-display mt-2 text-[40px] leading-[1.05] text-[#111111] xl:text-[52px]">
           How would you like to invest?
         </h1>
 
@@ -251,14 +260,14 @@ function InvestmentPath({
           </div>
         ) : null}
 
-        {/* Buttons */}
-        <div className="mt-5 flex items-center justify-between">
+        {/* Buttons — Back to LEFT of Continue, grouped on the right */}
+        <div className="mt-6 flex items-center justify-end gap-3">
           <button
             type="button"
             onClick={onBack}
             disabled={submitting}
             aria-label="Back"
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-[12px] border border-black/15 bg-white px-5 text-[13px] font-medium text-[#111111] transition hover:border-black/40 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex h-12 items-center justify-center gap-2 rounded-[12px] border border-black/15 bg-white px-6 text-[15px] font-medium text-[#111111] transition hover:border-black/40 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <ArrowLeft className="h-4 w-4" />
             Back
@@ -266,9 +275,9 @@ function InvestmentPath({
           <button
             type="button"
             onClick={handleContinue}
-            disabled={submitting}
+            disabled={submitting || !amountValid}
             aria-label="Continue"
-            className="group inline-flex h-11 items-center justify-center gap-2 rounded-[14px] bg-[#111111] px-7 text-[13px] font-medium text-white shadow-[0_14px_24px_rgba(17,24,39,0.18)] transition hover:bg-[#1f2937] disabled:cursor-not-allowed disabled:opacity-50"
+            className="group inline-flex h-12 items-center justify-center gap-2 rounded-[14px] bg-[#111111] px-7 text-[15px] font-medium text-white shadow-[0_14px_24px_rgba(17,24,39,0.18)] transition hover:bg-[#1f2937] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {submitting ? (
               <>

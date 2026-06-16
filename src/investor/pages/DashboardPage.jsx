@@ -75,9 +75,8 @@ function buildSteps(investor) {
       key: "identity",
       title: "Verify your identity",
       description:
-        "Confirm who you are with a government ID and a quick selfie. Powered by Persona.",
+        "Confirm who you are with a government ID and a quick selfie.",
       icon: UserSearch,
-      provider: "Persona",
       action: "persona",
       complete: identityComplete,
       current: !identityComplete && status === "awaiting_kyc",
@@ -85,10 +84,8 @@ function buildSteps(investor) {
     {
       key: "accreditation",
       title: "Verify accredited status",
-      description:
-        "Confirm you meet the SEC accreditation criteria. Powered by InvestReady.",
+      description: "Confirm you meet the SEC accreditation criteria.",
       icon: ShieldCheck,
-      provider: "InvestReady",
       action: "verify-investor",
       complete: accreditation === "verification_approved",
       current:
@@ -100,9 +97,8 @@ function buildSteps(investor) {
       key: "documents",
       title: "Sign subscription documents",
       description:
-        "Review and sign the subscription agreement and related documents. Powered by DocuSign.",
+        "Review and sign the subscription agreements and related documents.",
       icon: FileSignature,
-      provider: "DocuSign",
       action: "docusign",
       placeholder: true,
       complete: docSigning === "completed" || docSigning === "signed",
@@ -112,10 +108,8 @@ function buildSteps(investor) {
     {
       key: "funding",
       title: "Fund your subscription",
-      description:
-        "Link your bank via Stripe and pay your commitment via ACH. Settles in 3-5 business days.",
+      description: "Link your bank and pay your commitment via ACH.",
       icon: PiggyBank,
-      provider: "Stripe",
       placeholder: true,
       complete: ["funds_confirmed", "active"].includes(status),
       current:
@@ -175,7 +169,6 @@ function StepRow({ step, stepNumber, onStart, isCurrent, locked, busy }) {
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#6b7280]">
               {stateLabel}
-              {step.provider ? ` · ${step.provider}` : ""}
             </p>
             <h3 className="font-display mt-1.5 flex items-baseline gap-2 text-[20px] leading-tight text-[#111111]">
               <span className="text-[#9ca3af]">{stepNumber}.</span>
@@ -476,7 +469,7 @@ function DashboardPage() {
           <p>
             Need help?{" "}
             <a
-              href={`mailto:support@accessproperties.com`}
+              href="mailto:investors@ap.boston"
               className="text-[#111111] underline decoration-black/30 underline-offset-[5px] transition hover:decoration-black"
             >
               Contact us

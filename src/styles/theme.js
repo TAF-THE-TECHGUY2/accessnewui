@@ -45,22 +45,26 @@ export const ECOSYSTEM = [
     code: "ARE I",
     fullName: "Access Real Estate I LLC",
     role: "INVESTMENT VEHICLE",
+    logo: "/assets/ARE%20I.png",
   },
   {
     code: "AIM",
     fullName: "Access Investment Management, Inc.",
     role: "INVESTMENT MANAGER",
+    logo: "/assets/AIM.png",
   },
   {
     code: "APA",
     fullName: "Access Property Advisors LLC",
     role: "OPERATOR",
+    logo: "/assets/APA.png",
   },
   {
     code: "AP",
     fullName: "Access Properties",
     role: "INVESTOR PLATFORM",
+    logo: "/assets/AP.png",
   },
 ];
 
-export const SUPPORT_EMAIL = "ops@accessproperties.com";
+export const SUPPORT_EMAIL = "investors@ap.boston";

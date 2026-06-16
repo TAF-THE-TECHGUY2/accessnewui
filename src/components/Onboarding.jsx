@@ -94,12 +94,7 @@ function Onboarding() {
 
   switch (step) {
     case "welcome":
-      return (
-        <Welcome
-          onBegin={() => goTo("how-it-works")}
-          onExplore={() => goTo("current-offering")}
-        />
-      );
+      return <Welcome onBegin={() => goTo("how-it-works")} />;
 
     case "how-it-works":
       return (

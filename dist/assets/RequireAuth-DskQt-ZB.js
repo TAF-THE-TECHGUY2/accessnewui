@@ -1,0 +1,1 @@
+import{t as e}from"./jsx-runtime-dBoqvwbd.js";import{a as t,i as n,r}from"./index-DNhpfpHq.js";var i=e();function a(){let e=t();return!(typeof window>`u`)&&window.localStorage.getItem(`access_admin_token`)?(0,i.jsx)(n,{}):(0,i.jsx)(r,{to:`/admin/login`,replace:!0,state:{from:e}})}export{a as default};
