@@ -56,7 +56,6 @@ export default function FaqPage() {
   const [openId, setOpenId] = useState(null);
   const refs = useRef({});
 
-  // 1. FAQ items — live, with static fallback
   useEffect(() => {
     fetch(`${API_BASE_URL}/api/faq`)
       .then((r) => r.json())
@@ -66,7 +65,6 @@ export default function FaqPage() {
       .catch(() => setItems(faqItems));
   }, []);
 
-  // 2. Page config — live, with static fallback
   useEffect(() => {
     fetch(`${API_BASE_URL}/api/pages/slug/faq`)
       .then((r) => r.json())
@@ -99,109 +97,83 @@ export default function FaqPage() {
   }));
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Hero */}
-      <section
-        className="relative h-[597px] bg-cover bg-center"
-        style={{
-          backgroundImage: config.heroImage
-            ? `url(${config.heroImage})`
-            : "linear-gradient(135deg,#1f2937,#111827)",
-        }}
-      >
-        <div className="absolute inset-0 bg-black/55" />
+    <div className="min-h-screen bg-[#f8f8f6]">
+      {/* Top utility bar — back link */}
+      <div className="mx-auto max-w-3xl px-5 pt-6 sm:px-6">
+        <Link
+          to="/"
+          className="inline-flex h-9 items-center gap-1.5 text-[12px] font-medium text-[#6b7280] hover:text-[#111111]"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Back to onboarding
+        </Link>
+      </div>
 
-        {/* Back to onboarding */}
-        <div className="absolute left-6 top-6 z-10 sm:left-10 sm:top-8">
-          <Link
-            to="/"
-            className="inline-flex h-10 items-center gap-2 rounded-[10px] border border-white/30 bg-white/10 px-4 text-[13px] font-medium text-white backdrop-blur-md transition hover:bg-white/20"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to onboarding
-          </Link>
-        </div>
-
-        <div className="relative flex h-full flex-col items-center justify-center px-4">
-          <div className="w-full max-w-6xl">
-            <div className="mx-auto rounded-xl border border-white/10 bg-black/70 px-6 py-7 shadow-lg backdrop-blur-md md:px-10">
-              <h1 className="text-center text-3xl font-semibold text-white md:text-5xl">
-                {config.heroTitle || "Frequently Asked Questions"}
-              </h1>
-            </div>
-            {config.heroSubtitle ? (
-              <div className="mx-auto mt-6 max-w-2xl rounded-md border border-white/10 bg-black/55 px-5 py-3 backdrop-blur-sm">
-                <p className="text-center text-[15px] leading-relaxed text-white md:text-base">
-                  {config.heroSubtitle}
-                </p>
-              </div>
-            ) : null}
-          </div>
-        </div>
-      </section>
-
-      {/* Sticky category nav */}
-      <div className="sticky top-0 z-40 border-b border-gray-200 bg-white shadow-sm">
-        <div className="mx-auto max-w-6xl px-5 py-4 pt-6 md:px-8 lg:px-16">
-          <div className="flex flex-wrap justify-center gap-3">
-            {categories.map((cat) => {
-              const Icon = getIcon(cat.iconName);
-              return (
-                <button
-                  key={cat.key}
-                  onClick={() => scrollToSection(cat.key)}
-                  className="flex items-center gap-2 border border-gray-600 bg-gray-700 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-gray-800"
-                >
-                  <Icon className="h-4 w-4" />
-                  {cat.title}
-                </button>
-              );
-            })}
-          </div>
+      {/* Sticky pill nav */}
+      <div className="sticky top-0 z-40 mt-4 bg-[#f8f8f6]/95 px-5 py-4 backdrop-blur sm:px-6">
+        <div className="mx-auto flex max-w-3xl flex-wrap justify-center gap-2">
+          {categories.map((cat) => {
+            const Icon = getIcon(cat.iconName);
+            return (
+              <button
+                key={cat.key}
+                type="button"
+                onClick={() => scrollToSection(cat.key)}
+                className="inline-flex items-center gap-1.5 rounded-full bg-[#5b6470] px-4 py-1.5 text-[12px] font-medium text-white shadow-sm transition hover:bg-[#3f4651]"
+              >
+                <Icon className="h-3.5 w-3.5" />
+                {cat.title}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* Accordions */}
-      <div className="mx-auto max-w-6xl px-4 py-16 md:px-8 lg:px-16">
+      {/* Sections */}
+      <div className="mx-auto max-w-3xl px-5 pb-16 sm:px-6">
         {grouped.map((cat) => {
           const Icon = getIcon(cat.iconName);
           return (
             <section
               key={cat.key}
-              className="scroll-mt-40 pt-20"
               ref={refs.current[cat.key]}
+              className="scroll-mt-24 pt-10"
             >
-              <div className="mb-6 flex items-center gap-3">
-                <Icon className="h-6 w-6 text-gray-900" />
-                <h2 className="text-2xl font-semibold text-gray-900">
-                  {cat.title}
-                </h2>
+              <div className="mb-4 flex items-center gap-2 text-[#111111]">
+                <Icon className="h-4 w-4 text-[#4b5563]" />
+                <h2 className="text-[15px] font-semibold">{cat.title}</h2>
               </div>
-              <div className="space-y-4">
+
+              <div className="space-y-2.5">
                 {cat.items.map((item) => {
                   const open = openId === item._id;
                   return (
                     <div
                       key={item._id}
-                      className="mx-auto w-full max-w-3xl overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm"
+                      className={`overflow-hidden rounded-[10px] border bg-white transition ${
+                        open
+                          ? "border-black/20 shadow-[0_8px_20px_rgba(17,24,39,0.06)]"
+                          : "border-black/10"
+                      }`}
                     >
                       <button
+                        type="button"
                         onClick={() => toggle(item._id)}
-                        className="flex w-full items-center justify-between px-5 py-5 text-left transition hover:bg-gray-50"
+                        className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left hover:bg-[#fafafa]"
                       >
-                        <div className="flex items-center gap-3">
-                          <Icon className="h-5 w-5 shrink-0 text-gray-800" />
-                          <span className="text-[15px] font-semibold text-gray-900 md:text-base">
+                        <div className="flex min-w-0 items-center gap-2.5">
+                          <Icon className="h-4 w-4 shrink-0 text-[#6b7280]" />
+                          <span className="truncate text-[13px] text-[#111111]">
                             {item.question}
                           </span>
                         </div>
                         <ChevronDown
-                          className={`h-5 w-5 shrink-0 text-gray-500 transition-transform ${open ? "rotate-180" : ""}`}
+                          className={`h-4 w-4 shrink-0 text-[#9ca3af] transition-transform ${open ? "rotate-180" : ""}`}
                         />
                       </button>
                       {open ? (
                         <div
-                          className="whitespace-pre-line px-5 pb-5 text-[14px] leading-relaxed text-gray-700 md:text-[15px]"
+                          className="whitespace-pre-line border-t border-black/8 px-4 py-4 text-[13px] leading-6 text-[#4b5563]"
                           dangerouslySetInnerHTML={{ __html: item.answerHtml }}
                         />
                       ) : null}
