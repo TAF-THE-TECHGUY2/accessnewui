@@ -1,0 +1,1 @@
+import{n as e,t}from"./api-BXPoTxfW.js";var n=async({email:n,password:r})=>{let{data:i}=await t.post(`/login`,{email:n,password:r});return e(i.token),i.user},r=async()=>{try{await t.post(`/logout`)}finally{e(null)}};export{r as n,n as t};

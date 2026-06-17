@@ -2,6 +2,7 @@ import { Suspense, lazy } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 
 const Onboarding = lazy(() => import("../components/Onboarding"));
+const FaqPage = lazy(() => import("../pages/FaqPage"));
 const AdminLayout = lazy(() => import("../admin/layout/AdminLayout"));
 const RequireAuth = lazy(() => import("../admin/components/RequireAuth"));
 const LoginPage = lazy(() => import("../admin/pages/LoginPage"));
@@ -35,6 +36,7 @@ function AppRouter() {
     >
       <Routes>
         <Route path="/" element={<Onboarding />} />
+        <Route path="/faq" element={<FaqPage />} />
         <Route path="/admin/login" element={<LoginPage />} />
         <Route path="/login" element={<InvestorLoginPage />} />
         <Route element={<RequireInvestorAuth />}>

@@ -1,8 +1,7 @@
 import { ArrowRight, ListChecks, ShieldCheck, Sliders, TrendingUp } from "lucide-react";
+import { Link } from "react-router-dom";
 import OnboardingShell from "../OnboardingShell";
 import logo from "../../../assets/Logo.png";
-
-const FAQ_URL = "https://gentle-water-099e3771e-staging.westus2.7.azurestaticapps.net/faq";
 
 const FEATURES = [
   {
@@ -87,16 +86,14 @@ function Welcome({ onBegin }) {
                 Begin Onboarding
                 <ArrowRight className="h-5 w-5 transition group-hover:translate-x-0.5" />
               </button>
-              <a
-                href={FAQ_URL}
-                target="_blank"
-                rel="noopener noreferrer"
+              <Link
+                to="/faq"
                 aria-label="Explore first"
                 className="group flex h-14 w-full items-center justify-center gap-2 rounded-[14px] border border-black/15 bg-white text-[16px] font-medium text-[#111111] transition hover:border-black/40"
               >
                 Explore First
                 <ArrowRight className="h-5 w-5 transition group-hover:translate-x-0.5" />
-              </a>
+              </Link>
             </div>
           </div>
         </section>
