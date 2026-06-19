@@ -1,4 +1,5 @@
-import logo from "../../assets/Logo.png";
+// AP brand logo lives in /public so it can also be used by the ecosystem card.
+const logo = "/assets/AP.png";
 
 /**
  * The chrome around every onboarding page: top bar with logo + step dots,
@@ -21,6 +22,8 @@ function OnboardingShell({
   stepLabel = "",
   showFootnotes = false,
   variant = "card",
+  onDotClick,
+  stepLabels,
 }) {
   return (
     <div className={`bg-[#f8f8f6] text-[#111111] ${variant === "bleed" ? "flex h-screen flex-col overflow-hidden" : "min-h-screen"}`}>
@@ -34,7 +37,12 @@ function OnboardingShell({
           </div>
 
           <div className="flex items-center gap-4">
-            <StepDots dots={dots} activeDot={activeDot} />
+            <StepDots
+              dots={dots}
+              activeDot={activeDot}
+              onDotClick={onDotClick}
+              stepLabels={stepLabels}
+            />
             {dotLabel || stepLabel ? (
               <p className="text-[13px] font-medium uppercase tracking-[0.22em] text-[#111111] sm:text-[14px]">
                 {dotLabel || stepLabel}
@@ -56,16 +64,23 @@ function OnboardingShell({
 
       {showFootnotes && variant !== "bleed" ? (
         <footer className="mx-auto max-w-[1280px] px-6 pb-5 sm:px-10 sm:pb-6">
-          <div className="flex justify-end lg:pl-[55%]">
-            <a
-              href={SEC_FOOTNOTES_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-[13px] text-[#6b7280] underline decoration-black/20 underline-offset-[5px] hover:text-[#111111]"
-            >
+          <div className="flex justify-end lg:pl-[45%]">
+            <div className="flex items-start gap-2.5 max-w-[600px] text-[13px] leading-6 text-[#6b7280]">
               <InfoCircle />
-              Need additional information? View Footnotes
-            </a>
+              <p>
+                <span className="font-semibold text-[#111111]">Investor Resources:</span>{" "}
+                Access{" "}
+                <a
+                  href={SEC_FOOTNOTES_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline decoration-black/30 underline-offset-[4px] hover:text-[#111111] hover:decoration-black"
+                >
+                  educational materials and investor protection information
+                </a>{" "}
+                provided by the U.S. Securities and Exchange Commission.
+              </p>
+            </div>
           </div>
         </footer>
       ) : null}
@@ -73,17 +88,35 @@ function OnboardingShell({
   );
 }
 
-function StepDots({ dots, activeDot }) {
+function StepDots({ dots, activeDot, onDotClick, stepLabels }) {
   return (
     <div className="flex items-center gap-2">
-      {Array.from({ length: dots }).map((_, i) => (
-        <span
-          key={i}
-          className={`h-2.5 w-2.5 rounded-full transition ${
-            i === activeDot ? "bg-[#111111]" : i < activeDot ? "bg-[#111111]/40" : "bg-black/15"
-          }`}
-        />
-      ))}
+      {Array.from({ length: dots }).map((_, i) => {
+        const isActive = i === activeDot;
+        const isVisited = i < activeDot;
+        const isClickable = !!onDotClick && isVisited;
+        const baseClass = `h-2.5 w-2.5 rounded-full transition ${
+          isActive
+            ? "bg-[#111111]"
+            : isVisited
+            ? "bg-[#111111]/40"
+            : "bg-black/15"
+        }`;
+        const label = stepLabels?.[i] || `Step ${i + 1}`;
+
+        return isClickable ? (
+          <button
+            key={i}
+            type="button"
+            onClick={() => onDotClick(i)}
+            title={`Go to ${label}`}
+            aria-label={`Go to ${label}`}
+            className={`${baseClass} cursor-pointer ring-offset-2 hover:bg-[#111111] hover:ring-2 hover:ring-black/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#111111]`}
+          />
+        ) : (
+          <span key={i} className={baseClass} aria-current={isActive ? "step" : undefined} />
+        );
+      })}
     </div>
   );
 }

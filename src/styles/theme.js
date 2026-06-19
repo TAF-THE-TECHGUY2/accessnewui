@@ -27,17 +27,44 @@ export const FUND_OVERVIEW = {
   shortName: "Access Real Estate I",
   legalName: "Access Real Estate I LLC",
   description:
-    "Designed to target consistent income and long-term value creation through a diversified portfolio of residential real estate investments.",
+    "The fund invests in a diversified portfolio of residential assets across Boston and its surrounding suburbs, targeting stable income and long-term appreciation through value-add investments.",
   whatWeInvestIn:
     "A diversified portfolio of residential assets across Boston and surrounding suburbs, targeting stable income and long-term appreciation through value-add investments.",
   howWeCreateValue:
     "A vertically integrated model with local sourcing and hands-on management, focused on overlooked assets where active execution seeks to unlock value.",
   investmentFocus: "Residential Real Estate",
   market: "Greater Boston",
+  sponsor: "Access Properties LLC",
   structure: "Diversified Fund",
   management: "Access Investment Management, Inc.",
   minimumInvestment: 10000,
   investorType: "Accredited Investors",
+  targetReturns: "Targeting 12–15% net IRR over the hold period",
+  fees: "1.5% annual management fee · 20% performance fee above 8% preferred return",
+  distributions: "Quarterly distributions of net operating income, subject to fund performance",
+  documents: [
+    { label: "Private Placement Memorandum (PPM)", href: "#" },
+    { label: "Subscription Agreement", href: "#" },
+    { label: "Limited Partnership Agreement", href: "#" },
+    { label: "Form ADV Part 2", href: "#" },
+  ],
+  // Used by the View Fund Details modal — mirrors the portfolio card on the main site.
+  detailStats: [
+    { label: "Investment Focus", value: "Residential Real Estate" },
+    { label: "Market", value: "Greater Boston" },
+    { label: "Structure", value: "Diversified Fund" },
+    { label: "Management", value: "Access Investment Management, Inc." },
+    { label: "Inception", value: "2022" },
+    { label: "Minimum Investment\n(Accredited Investors – Direct Offering)", value: "$10,000" },
+    { label: "Minimum Investment\n(Non-Accredited – Through Third-Party Platform)", value: "$100" },
+    { label: "Liquidity", value: "Structured Withdrawals" },
+    { label: "Distributions", value: "Targeted annually" },
+    { label: "Net Annual Return, 2025", value: "20.58%" },
+    { label: "Net Total Return 2022-2025", value: "26.43%" },
+    { label: "Net Total Return 2022-2025, Annualized", value: "6.19%" },
+  ],
+  footnote:
+    "Non-accredited investors may access similar investments through a separate offering on a third-party platform. Terms and availability may differ. Distributions are not guaranteed and depend on investment results. Returns are presented net of fees and expenses unless otherwise noted. Past performance does not guarantee future results.",
 };
 
 export const ECOSYSTEM = [

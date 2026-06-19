@@ -1,7 +1,7 @@
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import OnboardingShell from "../OnboardingShell";
 import { ECOSYSTEM } from "../../../styles/theme";
-import logo from "../../../assets/Logo.png";
+const logo = "/assets/AP.png";
 
 const NEXT_STEPS = [
   "Create your investor account",
@@ -31,8 +31,8 @@ function EcosystemCard({ code, fullName, role, logo: entityLogo }) {
         </p>
       </div>
       <div className="mt-auto border-t border-black/10 pt-4">
-        {/* Chip spans the full card width so it never overflows */}
-        <span className="block w-full truncate rounded bg-[#f2f1ee] px-2 py-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#4b5563]">
+        {/* Chip spans the full card width and wraps if needed so role text never truncates */}
+        <span className="block w-full rounded bg-[#f2f1ee] px-2 py-2 text-[10px] font-semibold uppercase leading-[1.3] tracking-[0.04em] text-[#4b5563]">
           {role}
         </span>
       </div>
@@ -40,9 +40,15 @@ function EcosystemCard({ code, fullName, role, logo: entityLogo }) {
   );
 }
 
-function HowItWorks({ onBack, onNext }) {
+function HowItWorks({ onBack, onNext, onDotClick, stepLabels }) {
   return (
-    <OnboardingShell dots={6} activeDot={1} stepLabel="STEP 2 OF 6">
+    <OnboardingShell
+      dots={6}
+      activeDot={1}
+      stepLabel="STEP 2 OF 6"
+      onDotClick={onDotClick}
+      stepLabels={stepLabels}
+    >
       {/* Wider left column so ecosystem cards inside get more horizontal room */}
       <div className="grid items-start gap-8 lg:grid-cols-[1.6fr_0.8fr]">
         {/* Left — explanation + ecosystem */}

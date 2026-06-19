@@ -7,7 +7,6 @@ import {
   Landmark,
   Layers,
   MapPin,
-  ShieldCheck,
   Target,
   UserCog,
   X,
@@ -37,7 +36,24 @@ function OverviewRow({ icon: Icon, label, value }) {
   );
 }
 
-function FundDetailsModal({ onClose }) {
+// Splits a label like "Minimum Investment\n(Accredited Investors – Direct Offering)"
+// into a primary first line and an optional secondary parenthetical second line.
+function getStatLabelLines(label) {
+  const text = String(label || "").trim();
+  if (!text) return { primary: "", secondary: "" };
+  const manualBreaks = text.split(/\n+/).map((p) => p.trim()).filter(Boolean);
+  if (manualBreaks.length > 1) {
+    return { primary: manualBreaks[0], secondary: manualBreaks.slice(1).join(" ") };
+  }
+  const trailingParen = text.match(/^(.*?)(\s*\([^)]*\))$/);
+  if (trailingParen) {
+    return { primary: trailingParen[1].trim(), secondary: trailingParen[2].trim() };
+  }
+  return { primary: text, secondary: "" };
+}
+
+function FundDetailsModal({ onClose, onInvestNow }) {
+  const stats = FUND_OVERVIEW.detailStats || [];
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
@@ -45,101 +61,106 @@ function FundDetailsModal({ onClose }) {
         if (event.target === event.currentTarget) onClose();
       }}
     >
-      <div className="flex max-h-[92vh] w-full max-w-[760px] flex-col overflow-hidden rounded-[24px] border border-black/10 bg-white shadow-[0_30px_80px_rgba(17,24,39,0.18)]">
-        {/* Header */}
-        <div className="flex items-start justify-between gap-6 border-b border-black/8 px-8 pt-7 pb-5">
-          <div>
-            <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[#6b7280]">
-              Fund Details
-            </p>
-            <h2 className="font-display mt-2 text-[32px] leading-tight text-[#111111]">
-              {FUND_OVERVIEW.shortName}
-            </h2>
-            <p className="mt-1 text-[13px] text-[#6b7280]">{FUND_OVERVIEW.legalName}</p>
+      <div className="relative flex max-h-[92vh] w-full max-w-[640px] flex-col overflow-hidden rounded-[20px] border border-black/10 bg-white shadow-[0_30px_80px_rgba(17,24,39,0.18)]">
+        {/* Close button — floats top-right over the lime banner */}
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          className="absolute right-5 top-5 z-10 grid h-9 w-9 place-items-center rounded-full border border-black/10 bg-white text-[#4b5563] transition hover:border-black/40 hover:text-[#111111]"
+        >
+          <X className="h-4 w-4" />
+        </button>
+
+        {/* Lime gradient banner with logo card — ported from the main site */}
+        <div className="relative shrink-0">
+          <div className="h-28 bg-gradient-to-r from-lime-100 via-lime-50 to-white" />
+          <div className="absolute inset-0 bg-white/20" />
+          <div className="absolute inset-0 flex items-start px-6 pt-5">
+            <div className="inline-flex items-center rounded-lg border border-black/10 bg-white px-3 py-2 shadow-sm">
+              <img
+                src="/assets/AP.png"
+                alt="Access Properties"
+                className="h-7 w-auto object-contain"
+                loading="lazy"
+              />
+            </div>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-black/10 bg-white text-[#4b5563] transition hover:border-black/40 hover:text-[#111111]"
-          >
-            <X className="h-4 w-4" />
-          </button>
         </div>
 
-        {/* Body */}
-        <div className="overflow-y-auto px-8 py-6">
-          <p className="text-[15px] leading-7 text-[#4b5563]">
+        {/* Scrollable body */}
+        <div className="overflow-y-auto px-7 pb-9 pt-7 md:px-9 md:pb-10">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-gray-500">
+            Portfolio
+          </p>
+          <h2 className="mt-3 text-2xl font-semibold leading-tight text-gray-900 md:text-3xl">
+            {FUND_OVERVIEW.shortName}
+          </h2>
+          <p className="mt-3 max-w-prose text-sm leading-relaxed text-gray-600 md:text-[15px]">
             {FUND_OVERVIEW.description}
           </p>
 
-          <div className="mt-7 grid gap-6 sm:grid-cols-2">
-            <div className="flex items-start gap-3">
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#111111] text-white">
-                <Building className="h-4 w-4" />
-              </span>
-              <div>
-                <h4 className="font-display text-[17px] text-[#111111]">What We Invest In</h4>
-                <p className="mt-1.5 text-[13px] leading-6 text-[#4b5563]">
-                  {FUND_OVERVIEW.whatWeInvestIn}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#111111] text-white">
-                <Target className="h-4 w-4" />
-              </span>
-              <div>
-                <h4 className="font-display text-[17px] text-[#111111]">How We Create Value</h4>
-                <p className="mt-1.5 text-[13px] leading-6 text-[#4b5563]">
-                  {FUND_OVERVIEW.howWeCreateValue}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-7 rounded-[14px] border border-black/8 bg-[#f7f5f1] p-5">
-            <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[#6b7280]">
-              At a glance
-            </p>
-            <dl className="mt-3 grid gap-3 sm:grid-cols-2">
-              {[
-                ["Investment Focus", FUND_OVERVIEW.investmentFocus],
-                ["Market", FUND_OVERVIEW.market],
-                ["Structure", FUND_OVERVIEW.structure],
-                ["Management", FUND_OVERVIEW.management],
-                ["Minimum Investment", formatCurrency(FUND_OVERVIEW.minimumInvestment)],
-                ["Investor Type", FUND_OVERVIEW.investorType],
-              ].map(([k, v]) => (
-                <div key={k}>
-                  <dt className="text-[11px] uppercase tracking-[0.12em] text-[#6b7280]">{k}</dt>
-                  <dd className="mt-0.5 text-[14px] text-[#111111]">{v}</dd>
+          {/* Stats table */}
+          <div className="mt-8 overflow-hidden rounded-xl border border-black/10 bg-white">
+            {stats.map((row, idx) => {
+              const lines = getStatLabelLines(row.label);
+              return (
+                <div
+                  key={`${row.label}-${idx}`}
+                  className={`grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 px-5 py-5 text-sm transition-colors hover:bg-gray-50 md:gap-6 md:px-6 ${
+                    idx !== stats.length - 1 ? "border-b border-gray-200/80" : ""
+                  }`}
+                >
+                  <span className="min-w-0 pr-2 leading-relaxed text-gray-500">
+                    <span className="block">{lines.primary}</span>
+                    {lines.secondary ? (
+                      <span className="mt-1 block text-[13px] text-gray-500">
+                        {lines.secondary}
+                      </span>
+                    ) : null}
+                  </span>
+                  <span className="whitespace-nowrap pt-0.5 text-right font-semibold text-gray-900">
+                    {row.value}
+                  </span>
                 </div>
-              ))}
-            </dl>
+              );
+            })}
           </div>
-        </div>
 
-        {/* Footer */}
-        <div className="border-t border-black/8 px-8 py-5">
-          <button
-            type="button"
-            onClick={onClose}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-[12px] bg-[#111111] px-6 text-[14px] font-medium text-white hover:bg-[#1f2937]"
-          >
-            Close
-          </button>
+          {/* Learn More / Invest Now CTA */}
+          <div className="mt-8">
+            <button
+              type="button"
+              onClick={onInvestNow}
+              className="group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gray-900 py-3.5 font-semibold text-white shadow-sm transition hover:bg-black hover:shadow"
+            >
+              Invest Now
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+            </button>
+          </div>
+
+          {FUND_OVERVIEW.footnote ? (
+            <p className="mt-4 text-xs leading-relaxed text-gray-500">
+              {FUND_OVERVIEW.footnote}
+            </p>
+          ) : null}
         </div>
       </div>
     </div>
   );
 }
 
-function CurrentOffering({ onBack, onNext }) {
+function CurrentOffering({ onBack, onNext, onDotClick, stepLabels }) {
   const [showDetails, setShowDetails] = useState(false);
 
   return (
-    <OnboardingShell dots={5} activeDot={2} dotLabel="OFFERING">
+    <OnboardingShell
+      dots={6}
+      activeDot={3}
+      stepLabel="STEP 4 OF 6"
+      onDotClick={onDotClick}
+      stepLabels={stepLabels}
+    >
       <div className="grid items-start gap-12 lg:grid-cols-[1.1fr_0.9fr]">
         {/* Left — narrative */}
         <section>
@@ -236,14 +257,9 @@ function CurrentOffering({ onBack, onNext }) {
                 label="Minimum Investment"
                 value={formatCurrency(FUND_OVERVIEW.minimumInvestment)}
               />
-              <OverviewRow
-                icon={ShieldCheck}
-                label="Investor Type"
-                value={FUND_OVERVIEW.investorType}
-              />
             </div>
 
-            {/* Card footer — opens modal instead of navigating away */}
+            {/* "View Fund Details" sits where the Investor Type row used to be */}
             <button
               type="button"
               onClick={() => setShowDetails(true)}
@@ -259,7 +275,15 @@ function CurrentOffering({ onBack, onNext }) {
         </section>
       </div>
 
-      {showDetails ? <FundDetailsModal onClose={() => setShowDetails(false)} /> : null}
+      {showDetails ? (
+        <FundDetailsModal
+          onClose={() => setShowDetails(false)}
+          onInvestNow={() => {
+            setShowDetails(false);
+            onNext();
+          }}
+        />
+      ) : null}
     </OnboardingShell>
   );
 }

@@ -99,19 +99,19 @@ export default function FaqPage() {
   return (
     <div className="min-h-screen bg-[#f8f8f6]">
       {/* Top utility bar — back link */}
-      <div className="mx-auto max-w-3xl px-5 pt-6 sm:px-6">
+      <div className="mx-auto max-w-6xl px-6 pt-10 sm:px-12">
         <Link
           to="/"
-          className="inline-flex h-9 items-center gap-1.5 text-[12px] font-medium text-[#6b7280] hover:text-[#111111]"
+          className="inline-flex h-11 items-center gap-2 text-[15px] font-medium text-[#6b7280] hover:text-[#111111]"
         >
-          <ArrowLeft className="h-3.5 w-3.5" />
+          <ArrowLeft className="h-5 w-5" />
           Back to onboarding
         </Link>
       </div>
 
       {/* Sticky pill nav */}
-      <div className="sticky top-0 z-40 mt-4 bg-[#f8f8f6]/95 px-5 py-4 backdrop-blur sm:px-6">
-        <div className="mx-auto flex max-w-3xl flex-wrap justify-center gap-2">
+      <div className="sticky top-0 z-40 mt-7 bg-[#f8f8f6]/95 px-6 py-6 backdrop-blur sm:px-12">
+        <div className="mx-auto flex max-w-6xl flex-wrap justify-center gap-3.5">
           {categories.map((cat) => {
             const Icon = getIcon(cat.iconName);
             return (
@@ -119,9 +119,9 @@ export default function FaqPage() {
                 key={cat.key}
                 type="button"
                 onClick={() => scrollToSection(cat.key)}
-                className="inline-flex items-center gap-1.5 rounded-full bg-[#5b6470] px-4 py-1.5 text-[12px] font-medium text-white shadow-sm transition hover:bg-[#3f4651]"
+                className="inline-flex items-center gap-2.5 rounded-full bg-[#5b6470] px-7 py-3 text-[16px] font-medium text-white shadow-sm transition hover:bg-[#3f4651]"
               >
-                <Icon className="h-3.5 w-3.5" />
+                <Icon className="h-5 w-5" />
                 {cat.title}
               </button>
             );
@@ -130,50 +130,50 @@ export default function FaqPage() {
       </div>
 
       {/* Sections */}
-      <div className="mx-auto max-w-3xl px-5 pb-16 sm:px-6">
+      <div className="mx-auto max-w-6xl px-6 pb-24 sm:px-12">
         {grouped.map((cat) => {
           const Icon = getIcon(cat.iconName);
           return (
             <section
               key={cat.key}
               ref={refs.current[cat.key]}
-              className="scroll-mt-24 pt-10"
+              className="scroll-mt-32 pt-16"
             >
-              <div className="mb-4 flex items-center gap-2 text-[#111111]">
-                <Icon className="h-4 w-4 text-[#4b5563]" />
-                <h2 className="text-[15px] font-semibold">{cat.title}</h2>
+              <div className="mb-7 flex items-center gap-3 text-[#111111]">
+                <Icon className="h-7 w-7 text-[#111111]" />
+                <h2 className="text-[28px] font-semibold">{cat.title}</h2>
               </div>
 
-              <div className="space-y-2.5">
+              <div className="space-y-4">
                 {cat.items.map((item) => {
                   const open = openId === item._id;
                   return (
                     <div
                       key={item._id}
-                      className={`overflow-hidden rounded-[10px] border bg-white transition ${
+                      className={`overflow-hidden rounded-[14px] border bg-white transition ${
                         open
-                          ? "border-black/20 shadow-[0_8px_20px_rgba(17,24,39,0.06)]"
+                          ? "border-black/20 shadow-[0_10px_24px_rgba(17,24,39,0.06)]"
                           : "border-black/10"
                       }`}
                     >
                       <button
                         type="button"
                         onClick={() => toggle(item._id)}
-                        className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left hover:bg-[#fafafa]"
+                        className="flex w-full items-center justify-between gap-4 px-7 py-6 text-left hover:bg-[#fafafa]"
                       >
-                        <div className="flex min-w-0 items-center gap-2.5">
-                          <Icon className="h-4 w-4 shrink-0 text-[#6b7280]" />
-                          <span className="truncate text-[13px] text-[#111111]">
+                        <div className="flex min-w-0 items-center gap-3.5">
+                          <Icon className="h-6 w-6 shrink-0 text-[#6b7280]" />
+                          <span className="text-[18px] font-medium text-[#111111]">
                             {item.question}
                           </span>
                         </div>
                         <ChevronDown
-                          className={`h-4 w-4 shrink-0 text-[#9ca3af] transition-transform ${open ? "rotate-180" : ""}`}
+                          className={`h-6 w-6 shrink-0 text-[#9ca3af] transition-transform ${open ? "rotate-180" : ""}`}
                         />
                       </button>
                       {open ? (
                         <div
-                          className="whitespace-pre-line border-t border-black/8 px-4 py-4 text-[13px] leading-6 text-[#4b5563]"
+                          className="whitespace-pre-line border-t border-black/8 px-7 py-6 text-[16px] leading-8 text-[#4b5563]"
                           dangerouslySetInnerHTML={{ __html: item.answerHtml }}
                         />
                       ) : null}

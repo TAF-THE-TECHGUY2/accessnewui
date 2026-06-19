@@ -59,10 +59,17 @@ function NextStep({ icon: Icon, title, detail, index }) {
   );
 }
 
-function Complete({ onBack, onContinueToPortal }) {
+function Complete({ onBack, onContinueToPortal, onDotClick, stepLabels }) {
   return (
-    <OnboardingShell dots={6} activeDot={5} stepLabel="STEP 6 OF 6" dotLabel="COMPLETE">
-      <div className="grid items-start gap-12 lg:grid-cols-[1fr_1fr]">
+    <OnboardingShell
+      dots={6}
+      activeDot={5}
+      stepLabel="STEP 6 OF 6"
+      dotLabel="COMPLETE"
+      onDotClick={onDotClick}
+      stepLabels={stepLabels}
+    >
+      <div className="grid items-start gap-12 lg:grid-cols-[1.1fr_0.9fr]">
         {/* Left — welcome */}
         <section>
           <h1 className="font-display text-[48px] leading-[1.05] text-[#111111] xl:text-[64px]">

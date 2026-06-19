@@ -1,7 +1,7 @@
 import { ArrowRight, ListChecks, ShieldCheck, Sliders, TrendingUp } from "lucide-react";
 import { Link } from "react-router-dom";
 import OnboardingShell from "../OnboardingShell";
-import logo from "../../../assets/Logo.png";
+const logo = "/assets/AP.png";
 
 const FEATURES = [
   {
@@ -18,9 +18,16 @@ const FEATURES = [
   },
 ];
 
-function Welcome({ onBegin }) {
+function Welcome({ onBegin, onDotClick, stepLabels }) {
   return (
-    <OnboardingShell dots={5} activeDot={0} dotLabel="WELCOME" showFootnotes>
+    <OnboardingShell
+      dots={6}
+      activeDot={0}
+      dotLabel="WELCOME"
+      showFootnotes
+      onDotClick={onDotClick}
+      stepLabels={stepLabels}
+    >
       <div className="grid items-center gap-12 lg:grid-cols-[1.1fr_0.9fr]">
         {/* Left — hero */}
         <section>

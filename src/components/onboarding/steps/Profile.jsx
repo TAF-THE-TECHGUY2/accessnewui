@@ -141,7 +141,7 @@ const COUNTRIES = [
   "Other",
 ];
 
-function Profile({ initial, onBack, onNext }) {
+function Profile({ initial, onBack, onNext, onDotClick, stepLabels }) {
   const [profile, setProfile] = useState(initial);
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
@@ -182,6 +182,8 @@ function Profile({ initial, onBack, onNext }) {
       stepLabel="STEP 3 OF 6"
       variant="bleed"
       showFootnotes={false}
+      onDotClick={onDotClick}
+      stepLabels={stepLabels}
     >
       <div className="grid h-full lg:grid-cols-[1fr_1.1fr]">
         {/* LEFT — hero photo with all text grouped in the lower-left */}

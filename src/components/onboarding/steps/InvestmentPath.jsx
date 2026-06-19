@@ -132,6 +132,8 @@ function InvestmentPath({
   initialPath = null,
   onBack,
   onSuccess,
+  onDotClick,
+  stepLabels,
 }) {
   const [path, setPath] = useState(initialPath);
   const [amounts, setAmounts] = useState({
@@ -208,8 +210,16 @@ function InvestmentPath({
   };
 
   return (
-    <OnboardingShell dots={5} activeDot={3} dotLabel="INVESTMENT PATH">
-      <div>
+    <OnboardingShell
+      dots={6}
+      activeDot={4}
+      stepLabel="STEP 5 OF 6"
+      onDotClick={onDotClick}
+      stepLabels={stepLabels}
+    >
+      {/* Center the content with a comfortable max-width so the right side
+          doesn't read as empty whitespace */}
+      <div className="mx-auto max-w-[820px]">
         {/* Header */}
         <p className="text-[13px] font-medium uppercase tracking-[0.18em] text-[#6b7280]">
           Investment Path

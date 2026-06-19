@@ -27,6 +27,16 @@ const STEPS = [
   "complete",
 ];
 
+// Used as accessible labels on the clickable step dots in the top bar.
+const STEP_LABELS = [
+  "Welcome",
+  "How It Works",
+  "Profile",
+  "Current Offering",
+  "Investment Path",
+  "Complete",
+];
+
 const PROFILE_INITIAL = {
   firstName: "",
   lastName: "",
@@ -92,15 +102,26 @@ function Onboarding() {
 
   const goTo = (next) => setStep(next);
 
+  // Allow clicking a previous step's dot in the top bar to jump back to it.
+  // OnboardingShell already restricts this to dots with index < activeDot.
+  const onDotClick = (index) => {
+    const next = STEPS[index];
+    if (next) goTo(next);
+  };
+
+  // Common props every step needs for the clickable-dots header.
+  const navProps = { onDotClick, stepLabels: STEP_LABELS };
+
   switch (step) {
     case "welcome":
-      return <Welcome onBegin={() => goTo("how-it-works")} />;
+      return <Welcome onBegin={() => goTo("how-it-works")} {...navProps} />;
 
     case "how-it-works":
       return (
         <HowItWorks
           onBack={() => goTo("welcome")}
           onNext={() => goTo("profile")}
+          {...navProps}
         />
       );
 
@@ -113,6 +134,7 @@ function Onboarding() {
             setProfile(submitted);
             goTo("current-offering");
           }}
+          {...navProps}
         />
       );
 
@@ -121,6 +143,7 @@ function Onboarding() {
         <CurrentOffering
           onBack={() => goTo("profile")}
           onNext={() => goTo("investment-path")}
+          {...navProps}
         />
       );
 
@@ -137,6 +160,7 @@ function Onboarding() {
             setInvestorCode(code);
             goTo("complete");
           }}
+          {...navProps}
         />
       );
 
@@ -145,6 +169,7 @@ function Onboarding() {
         <Complete
           onBack={() => goTo("investment-path")}
           onContinueToPortal={() => navigate("/dashboard")}
+          {...navProps}
         />
       );
 
