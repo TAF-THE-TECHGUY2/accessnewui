@@ -76,15 +76,17 @@ export default function FaqPage() {
   }, []);
 
   const categories = config.categories || [];
-  useEffect(() => {
-    categories.forEach((cat) => {
-      if (!refs.current[cat.key]) refs.current[cat.key] = React.createRef();
-    });
-  }, [categories]);
+
+  // Store DOM nodes directly via ref callback so scrolling works on the first
+  // click — no useEffect-then-render race condition.
+  const setSectionRef = (key) => (node) => {
+    if (node) refs.current[key] = node;
+    else delete refs.current[key];
+  };
 
   const toggle = (id) => setOpenId((prev) => (prev === id ? null : id));
   const scrollToSection = (key) =>
-    refs.current[key]?.current?.scrollIntoView({
+    refs.current[key]?.scrollIntoView({
       behavior: "smooth",
       block: "start",
     });
@@ -136,7 +138,7 @@ export default function FaqPage() {
           return (
             <section
               key={cat.key}
-              ref={refs.current[cat.key]}
+              ref={setSectionRef(cat.key)}
               className="scroll-mt-32 pt-16"
             >
               <div className="mb-7 flex items-center gap-3 text-[#111111]">
