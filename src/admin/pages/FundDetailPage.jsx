@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Trash2 } from "lucide-react";
+import { ArrowLeft, Download, FileText, Trash2, Upload } from "lucide-react";
 
 import DestructiveDeleteModal from "../components/DestructiveDeleteModal";
 import {
@@ -10,8 +10,11 @@ import {
   deleteAdminFund,
   deleteFundDistribution,
   deleteFundFee,
+  deleteFundDocument,
   deleteFundUnitPrice,
+  downloadFundDocument,
   fetchAdminFund,
+  uploadFundDocument,
 } from "../../services/adminService";
 
 const formatCurrency = (amount) =>
@@ -248,6 +251,207 @@ function DeclareFeeForm({ fundCode, onDeclared }) {
   );
 }
 
+const DOCUMENT_CATEGORIES = [
+  { value: "legal", label: "Legal" },
+  { value: "operational", label: "Operational" },
+  { value: "financial", label: "Financial" },
+  { value: "tax", label: "Tax" },
+];
+
+const formatFileSize = (bytes) => {
+  if (!bytes) return "PDF";
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+function OfferingDocumentsSection({ fundCode, documents, onChanged }) {
+  const [form, setForm] = useState({
+    title: "",
+    category: "legal",
+    subcategory: "",
+    documentDatedAt: "",
+    file: null,
+  });
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState(null);
+
+  const submit = async (event) => {
+    event.preventDefault();
+    const formElement = event.currentTarget;
+    setBusy(true);
+    setMessage(null);
+
+    try {
+      await uploadFundDocument(fundCode, form);
+      setForm({
+        title: "",
+        category: "legal",
+        subcategory: "",
+        documentDatedAt: "",
+        file: null,
+      });
+      formElement.reset();
+      setMessage({ type: "success", text: "Offering document uploaded." });
+      await onChanged();
+    } catch (error) {
+      const validationErrors = error?.response?.data?.errors;
+      const firstError = validationErrors
+        ? Object.values(validationErrors).flat()[0]
+        : null;
+      setMessage({
+        type: "error",
+        text: firstError || error?.response?.data?.message || "Could not upload the document.",
+      });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const remove = async (document) => {
+    if (!confirm(`Delete “${document.title}”? Investors will no longer be able to access it.`)) {
+      return;
+    }
+
+    setMessage(null);
+    try {
+      await deleteFundDocument(fundCode, document.id);
+      setMessage({ type: "success", text: "Document deleted." });
+      await onChanged();
+    } catch (error) {
+      setMessage({
+        type: "error",
+        text: error?.response?.data?.message || "Could not delete the document.",
+      });
+    }
+  };
+
+  return (
+    <Section
+      title="Offering documents"
+      action={<span className="text-xs text-gray-500">{documents.length} documents</span>}
+    >
+      <p className="mb-4 text-sm text-gray-500">
+        Upload PDFs that investors in this fund can review before continuing.
+      </p>
+
+      <form onSubmit={submit} className="rounded-[14px] border border-black/5 bg-[#fafaf8] p-4">
+        <div className="grid gap-3 md:grid-cols-2">
+          <label className="text-xs font-medium text-gray-600">
+            Document title
+            <input
+              required
+              type="text"
+              value={form.title}
+              onChange={(event) => setForm({ ...form, title: event.target.value })}
+              placeholder="Private Placement Memorandum"
+              className="mt-1 h-10 w-full rounded-[10px] border border-black/10 bg-white px-3 text-sm text-ink outline-none focus:border-teal-600"
+            />
+          </label>
+          <label className="text-xs font-medium text-gray-600">
+            Category
+            <select
+              value={form.category}
+              onChange={(event) => setForm({ ...form, category: event.target.value })}
+              className="mt-1 h-10 w-full rounded-[10px] border border-black/10 bg-white px-3 text-sm text-ink outline-none focus:border-teal-600"
+            >
+              {DOCUMENT_CATEGORIES.map((category) => (
+                <option key={category.value} value={category.value}>{category.label}</option>
+              ))}
+            </select>
+          </label>
+          <label className="text-xs font-medium text-gray-600">
+            Document type <span className="font-normal text-gray-400">(optional)</span>
+            <input
+              type="text"
+              value={form.subcategory}
+              onChange={(event) => setForm({ ...form, subcategory: event.target.value })}
+              placeholder="Operating Agreement"
+              className="mt-1 h-10 w-full rounded-[10px] border border-black/10 bg-white px-3 text-sm text-ink outline-none focus:border-teal-600"
+            />
+          </label>
+          <label className="text-xs font-medium text-gray-600">
+            Document date <span className="font-normal text-gray-400">(optional)</span>
+            <input
+              type="date"
+              value={form.documentDatedAt}
+              onChange={(event) => setForm({ ...form, documentDatedAt: event.target.value })}
+              className="mt-1 h-10 w-full rounded-[10px] border border-black/10 bg-white px-3 text-sm text-ink outline-none focus:border-teal-600"
+            />
+          </label>
+        </div>
+
+        <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end">
+          <label className="flex-1 text-xs font-medium text-gray-600">
+            PDF file <span className="font-normal text-gray-400">(maximum 20 MB)</span>
+            <input
+              required
+              type="file"
+              accept="application/pdf,.pdf"
+              onChange={(event) => setForm({ ...form, file: event.target.files?.[0] || null })}
+              className="mt-1 block w-full rounded-[10px] border border-black/10 bg-white px-3 py-2 text-sm text-gray-600 file:mr-3 file:rounded-[7px] file:border-0 file:bg-black file:px-3 file:py-1 file:text-xs file:font-medium file:text-white"
+            />
+          </label>
+          <button
+            type="submit"
+            disabled={busy || !form.file}
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] bg-black px-4 text-sm font-medium text-white disabled:opacity-50"
+          >
+            <Upload className="h-4 w-4" /> {busy ? "Uploading…" : "Upload document"}
+          </button>
+        </div>
+
+        {message ? (
+          <p className={`mt-3 rounded-[10px] px-3 py-2 text-xs ${
+            message.type === "error" ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-700"
+          }`}>
+            {message.text}
+          </p>
+        ) : null}
+      </form>
+
+      {documents.length ? (
+        <ul className="mt-4 divide-y divide-black/5 overflow-hidden rounded-[12px] border border-black/5">
+          {documents.map((document) => (
+            <li key={document.id} className="flex items-center gap-3 bg-white px-4 py-3">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[9px] bg-sand-100 text-gray-600">
+                <FileText className="h-4 w-4" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-ink">{document.title}</p>
+                <p className="mt-0.5 text-xs text-gray-500">
+                  {document.subcategory || DOCUMENT_CATEGORIES.find((item) => item.value === document.category)?.label}
+                  {document.documentDatedAt ? ` · ${document.documentDatedAt}` : ""}
+                  {` · ${formatFileSize(document.sizeBytes)}`}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => downloadFundDocument(fundCode, document)}
+                className="rounded-[8px] p-2 text-gray-500 transition hover:bg-gray-50 hover:text-ink"
+                aria-label={`Download ${document.title}`}
+              >
+                <Download className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => remove(document)}
+                className="rounded-[8px] p-2 text-red-600 transition hover:bg-red-50 hover:text-red-800"
+                aria-label={`Delete ${document.title}`}
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <div className="mt-4 rounded-[12px] border border-dashed border-black/10 px-4 py-6 text-center text-sm text-gray-400">
+          No offering documents have been uploaded for this fund.
+        </div>
+      )}
+    </Section>
+  );
+}
+
 function FundDetailPage() {
   const { code } = useParams();
   const navigate = useNavigate();
@@ -274,7 +478,16 @@ function FundDetailPage() {
     return <p className="text-sm text-red-700">Fund not found.</p>;
   }
 
-  const { fund, aumAtCost, aumAtNav, holdingsCount, unitPrices, recentDistributions, recentFees } = data;
+  const {
+    fund,
+    aumAtCost,
+    aumAtNav,
+    holdingsCount,
+    unitPrices,
+    recentDistributions,
+    recentFees,
+    documents = [],
+  } = data;
 
   return (
     <div className="space-y-6">
@@ -425,6 +638,12 @@ function FundDetailPage() {
           </ul>
         </div>
       </Section>
+
+      <OfferingDocumentsSection
+        fundCode={code}
+        documents={documents}
+        onChanged={reload}
+      />
 
       <section className="rounded-[22px] border-2 border-red-200 bg-red-50/30 p-6">
         <h3 className="font-semibold text-red-900">Danger zone</h3>

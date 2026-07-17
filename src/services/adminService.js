@@ -223,6 +223,41 @@ export const deleteFundFee = async (id) => {
   return data;
 };
 
+export const uploadFundDocument = async (code, payload) => {
+  const formData = new FormData();
+  formData.append("title", payload.title);
+  formData.append("category", payload.category);
+  formData.append("file", payload.file);
+  if (payload.subcategory) formData.append("subcategory", payload.subcategory);
+  if (payload.documentDatedAt) formData.append("documentDatedAt", payload.documentDatedAt);
+
+  const { data } = await api.post(`/funds/${code}/documents`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return data.data;
+};
+
+export const downloadFundDocument = async (code, document) => {
+  const response = await api.get(`/funds/${code}/documents/${document.id}/download`, {
+    responseType: "blob",
+  });
+  const url = window.URL.createObjectURL(response.data);
+  const link = window.document.createElement("a");
+  link.href = url;
+  link.download = document.title?.toLowerCase().endsWith(".pdf")
+    ? document.title
+    : `${document.title || "offering-document"}.pdf`;
+  window.document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+};
+
+export const deleteFundDocument = async (code, id) => {
+  const { data } = await api.delete(`/funds/${code}/documents/${id}`);
+  return data;
+};
+
 // Communications (Phase 4 admin)
 export const fetchAdminCommunications = async () => {
   const { data } = await api.get("/communications");
