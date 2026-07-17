@@ -3,6 +3,9 @@ export default {
   content: ["./index.html", "./src/**/*.{js,jsx,ts,tsx}"],
   theme: {
     extend: {
+      screens: {
+        tall: { raw: "(min-height: 860px)" },
+      },
       colors: {
         shell: "#f7f3ed",
         shellDeep: "#f2ebe2",
