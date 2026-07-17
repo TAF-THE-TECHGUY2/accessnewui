@@ -14,6 +14,26 @@ export const logout = async () => {
   }
 };
 
+export const requestPasswordReset = async ({ email }) => {
+  const { data } = await investorApi.post("/password/forgot", { email });
+  return data;
+};
+
+export const resetPassword = async ({
+  email,
+  token,
+  password,
+  passwordConfirmation,
+}) => {
+  const { data } = await investorApi.post("/password/reset", {
+    email,
+    token,
+    password,
+    password_confirmation: passwordConfirmation,
+  });
+  return data;
+};
+
 export const me = async () => {
   const { data } = await investorApi.get("/me");
   const investor = data.data;

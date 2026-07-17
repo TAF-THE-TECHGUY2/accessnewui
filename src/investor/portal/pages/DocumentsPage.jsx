@@ -14,7 +14,7 @@ import {
 } from "../../../services/investorPortalService";
 import { getInvestorAuthToken } from "../../../services/investorApi";
 
-const CATEGORY_META = {
+export const CATEGORY_META = {
   legal: {
     label: "Legal",
     description: "Fund agreements, subscription docs, and disclosures.",
@@ -53,7 +53,7 @@ const formatDate = (iso) => {
   }
 };
 
-function DocumentRow({ doc }) {
+export function DocumentRow({ doc }) {
   const handleDownload = async () => {
     const token = getInvestorAuthToken();
     const url = portalDocumentDownloadUrl(doc.id);

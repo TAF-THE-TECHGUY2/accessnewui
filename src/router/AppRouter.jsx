@@ -17,6 +17,8 @@ const FundsPage = lazy(() => import("../admin/pages/FundsPage"));
 const FundDetailPage = lazy(() => import("../admin/pages/FundDetailPage"));
 const AdminCommunicationsPage = lazy(() => import("../admin/pages/CommunicationsPage"));
 const InvestorLoginPage = lazy(() => import("../investor/pages/LoginPage"));
+const InvestorForgotPasswordPage = lazy(() => import("../investor/pages/ForgotPasswordPage"));
+const InvestorResetPasswordPage = lazy(() => import("../investor/pages/ResetPasswordPage"));
 const InvestorDashboardPage = lazy(() => import("../investor/pages/DashboardPage"));
 const InvestReadyCallbackPage = lazy(() => import("../investor/pages/InvestReadyCallbackPage"));
 const RequireInvestorAuth = lazy(() => import("../investor/components/RequireInvestorAuth"));
@@ -39,6 +41,8 @@ function AppRouter() {
         <Route path="/faq" element={<FaqPage />} />
         <Route path="/admin/login" element={<LoginPage />} />
         <Route path="/login" element={<InvestorLoginPage />} />
+        <Route path="/forgot-password" element={<InvestorForgotPasswordPage />} />
+        <Route path="/reset-password" element={<InvestorResetPasswordPage />} />
         <Route element={<RequireInvestorAuth />}>
           <Route path="/dashboard" element={<InvestorDashboardPage />}>
             <Route index element={<PortalInvestmentPage />} />

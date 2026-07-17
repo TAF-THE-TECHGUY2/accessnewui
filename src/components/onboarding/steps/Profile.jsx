@@ -1,11 +1,13 @@
 import { useState } from "react";
 import {
+  AlertCircle,
   ArrowLeft,
   ArrowRight,
   ChevronDown,
   Eye,
   EyeOff,
   Globe,
+  Loader2,
   Lock,
   Mail,
   MapPin,
@@ -15,6 +17,16 @@ import {
 } from "lucide-react";
 
 import OnboardingShell from "../OnboardingShell";
+import { registerInvestor } from "../../../services/investorService";
+
+// The single accredited pathway offered by this flow. Investment amount and
+// accreditation are confirmed later inside the investor portal, so the
+// registration call records the fund minimum as the starting commitment.
+const ACCREDITED_PATHWAY = {
+  experience: "experienced",
+  investmentAmount: 10000,
+  accreditationStatus: "accredited",
+};
 
 const REQUIRED_FIELDS = [
   "firstName",
@@ -127,10 +139,6 @@ function Select({ icon: Icon, name, value, onChange, error, options, placeholder
   );
 }
 
-const US_STATES = [
-  "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT","VA","WA","WV","WI","WY","DC","PR",
-];
-
 const COUNTRIES = [
   "United States",
   "Canada",
@@ -141,11 +149,13 @@ const COUNTRIES = [
   "Other",
 ];
 
-function Profile({ initial, onBack, onNext, onDotClick, stepLabels }) {
+function Profile({ initial, onBack, onSuccess }) {
   const [profile, setProfile] = useState(initial);
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [apiError, setApiError] = useState("");
 
   const handleChange = (event) => {
     const { name, value, type, checked } = event.target;
@@ -162,8 +172,9 @@ function Profile({ initial, onBack, onNext, onDotClick, stepLabels }) {
     }
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
+    setApiError("");
     const next = validate(profile);
     if (Object.keys(next).length > 0) {
       setErrors(next);
@@ -172,19 +183,33 @@ function Profile({ initial, onBack, onNext, onDotClick, stepLabels }) {
       el?.focus();
       return;
     }
-    onNext(profile);
+
+    setSubmitting(true);
+    try {
+      const data = await registerInvestor({
+        profile,
+        ...ACCREDITED_PATHWAY,
+        password: profile.password,
+        passwordConfirmation: profile.passwordConfirmation,
+      });
+      onSuccess({
+        profile,
+        investorCode: data?.investor?.code || data?.code || "",
+        registrationResponse: data,
+      });
+    } catch (err) {
+      const message =
+        err?.response?.data?.message ||
+        Object.values(err?.response?.data?.errors || {})?.[0]?.[0] ||
+        "We couldn't create your account. Please try again.";
+      setApiError(message);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
-    <OnboardingShell
-      dots={6}
-      activeDot={2}
-      stepLabel="STEP 3 OF 6"
-      variant="bleed"
-      showFootnotes={false}
-      onDotClick={onDotClick}
-      stepLabels={stepLabels}
-    >
+    <OnboardingShell variant="bleed" showFootnotes={false}>
       <div className="grid h-full lg:grid-cols-[1fr_1.1fr]">
         {/* LEFT — hero photo with all text grouped in the lower-left */}
         <aside className="relative hidden h-full lg:block">
@@ -202,13 +227,15 @@ function Profile({ initial, onBack, onNext, onDotClick, stepLabels }) {
               Profile
             </p>
             <h1 className="font-display mt-3 text-[36px] leading-[1.05] xl:text-[40px]">
-              Create your
+              Create Your
               <br />
-              investor account.
+              Accredited Investor
+              <br />
+              Account
             </h1>
             <p className="mt-4 max-w-[360px] text-[13px] leading-6 text-white/85">
-              Create your account to review investment opportunities, complete
-              qualification requirements, and access your investor dashboard.
+              Create your account to access the offering documents and continue
+              the accredited investor qualification process.
             </p>
 
             {/* Inline security note — no pill, just icon + text */}
@@ -339,13 +366,12 @@ function Profile({ initial, onBack, onNext, onDotClick, stepLabels }) {
               </div>
               <div>
                 <FieldLabel>Country</FieldLabel>
-                <Input
+                <Select
                   icon={Globe}
                   name="country"
                   value={profile.country}
                   onChange={handleChange}
-                  placeholder="Country"
-                  autoComplete="country-name"
+                  options={COUNTRIES}
                   error={errors.country}
                 />
               </div>
@@ -457,24 +483,43 @@ function Profile({ initial, onBack, onNext, onDotClick, stepLabels }) {
               </div>
             </div>
 
+            {/* API error */}
+            {apiError ? (
+              <div className="mt-4 flex items-start gap-2.5 rounded-[10px] border border-red-200 bg-red-50 px-3.5 py-2.5">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-600" />
+                <p className="text-[12px] leading-5 text-red-700">{apiError}</p>
+              </div>
+            ) : null}
+
             {/* Buttons */}
             <div className="mt-6 flex items-center justify-between">
               <button
                 type="button"
                 onClick={onBack}
+                disabled={submitting}
                 aria-label="Back"
-                className="inline-flex h-10 items-center gap-2 rounded-[10px] border border-black/15 bg-white px-4 text-[13px] font-medium text-[#111111] hover:border-black/40"
+                className="inline-flex h-10 items-center gap-2 rounded-full border border-black/15 bg-white px-5 text-[13px] font-medium text-[#111111] hover:border-black/40 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <ArrowLeft className="h-3.5 w-3.5" />
                 Back
               </button>
               <button
                 type="submit"
+                disabled={submitting}
                 aria-label="Create account"
-                className="group inline-flex h-10 items-center gap-2 rounded-[10px] bg-[#111111] px-5 text-[13px] font-medium text-white shadow-[0_10px_20px_rgba(17,24,39,0.18)] hover:bg-[#1f2937]"
+                className="group inline-flex h-10 items-center gap-2 rounded-full bg-[#111111] px-6 text-[13px] font-medium text-white shadow-[0_10px_20px_rgba(17,24,39,0.18)] hover:bg-[#1f2937] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Create Account
-                <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
+                {submitting ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    Creating account…
+                  </>
+                ) : (
+                  <>
+                    Create Account
+                    <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
+                  </>
+                )}
               </button>
             </div>
 

@@ -6,13 +6,14 @@ import {
   BadgeCheck,
   CheckCircle2,
   FileSignature,
+  FileText,
+  Landmark,
   Loader2,
   LogOut,
   Lock,
-  PiggyBank,
   ShieldCheck,
-  Sparkles,
-  UserSearch,
+  User,
+  X,
 } from "lucide-react";
 import PersonaInquiry from "persona-react";
 
@@ -22,12 +23,17 @@ import StripeFundingPanel from "../components/StripeFundingPanel";
 import PortalLayout from "../portal/PortalLayout";
 import OnboardingShell from "../../components/onboarding/OnboardingShell";
 import {
+  fetchPortalDocuments,
   logout,
   me,
   recordPersonaInquiryCompletion,
   startInvestReadyVerification,
   startPersonaInquiry,
 } from "../../services/investorPortalService";
+import {
+  CATEGORY_META,
+  DocumentRow,
+} from "../portal/pages/DocumentsPage";
 
 const PERSONA_TEMPLATE_ID = import.meta.env.VITE_PERSONA_TEMPLATE_ID || "";
 const PERSONA_ENVIRONMENT_ID =
@@ -50,7 +56,28 @@ function isStepCompleted(status, completionStatuses) {
   return completionStatuses.includes(status);
 }
 
-function buildSteps(investor) {
+// The offering-documents step is optional and has no backend status, so the
+// "viewed" flag lives in localStorage, keyed per investor.
+const offeringDocsViewedKey = (investorId) =>
+  `ap_offering_docs_viewed_${investorId}`;
+
+function hasViewedOfferingDocs(investorId) {
+  try {
+    return localStorage.getItem(offeringDocsViewedKey(investorId)) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function markOfferingDocsViewed(investorId) {
+  try {
+    localStorage.setItem(offeringDocsViewedKey(investorId), "1");
+  } catch {
+    // Ignore storage errors — the step is optional either way.
+  }
+}
+
+function buildSteps(investor, offeringDocsViewed) {
   const status = investor.investmentStatus;
   const kyc = investor.kycStatus;
   const accreditation = investor.accreditationVerificationStatus;
@@ -72,19 +99,33 @@ function buildSteps(investor) {
 
   return [
     {
+      key: "review",
+      title: "Review offering documents",
+      description:
+        "Access, review, and download the current offering documents before continuing.",
+      icon: FileText,
+      action: "review-documents",
+      actionLabel: "View Documents",
+      // Optional: never gates, locks, or counts toward onboarding completion.
+      optional: true,
+      complete: offeringDocsViewed,
+      current: false,
+    },
+    {
       key: "identity",
       title: "Verify your identity",
       description:
-        "Confirm who you are with a government ID and a quick selfie.",
-      icon: UserSearch,
+        "Confirm your identity with a government-issued ID and a quick selfie.",
+      icon: User,
       action: "persona",
       complete: identityComplete,
       current: !identityComplete && status === "awaiting_kyc",
     },
     {
       key: "accreditation",
-      title: "Verify accredited status",
-      description: "Confirm you meet the SEC accreditation criteria.",
+      title: "Verify accredited investor status",
+      description:
+        "Complete accredited investor verification through our secure third-party process.",
       icon: ShieldCheck,
       action: "verify-investor",
       complete: accreditation === "verification_approved",
@@ -95,9 +136,9 @@ function buildSteps(investor) {
     },
     {
       key: "documents",
-      title: "Sign subscription documents",
+      title: "Complete subscription documents",
       description:
-        "Review and sign the subscription agreements and related documents.",
+        "Review and electronically sign the subscription agreement and related documents.",
       icon: FileSignature,
       action: "docusign",
       placeholder: true,
@@ -108,8 +149,9 @@ function buildSteps(investor) {
     {
       key: "funding",
       title: "Fund your subscription",
-      description: "Link your bank and pay your commitment via ACH.",
-      icon: PiggyBank,
+      description:
+        "Link your bank account and submit your investment by ACH.",
+      icon: Landmark,
       placeholder: true,
       complete: ["funds_confirmed", "active"].includes(status),
       current:
@@ -117,10 +159,10 @@ function buildSteps(investor) {
     },
     {
       key: "active",
-      title: "Investment activated",
+      title: "Investment confirmed",
       description:
-        "Your investment is live. You'll receive a confirmation email and dashboard access.",
-      icon: Sparkles,
+        "Once your subscription is accepted and funds are received, you'll receive confirmation and dashboard access.",
+      icon: CheckCircle2,
       complete: status === "active",
       current: status === "funds_confirmed",
     },
@@ -135,7 +177,18 @@ function StepRow({ step, stepNumber, onStart, isCurrent, locked, busy }) {
     ? "In progress"
     : locked
     ? "Locked"
+    : step.optional
+    ? "Available"
     : "Pending";
+  // Badge colors per the reference design: beige for available, blue for
+  // in progress, gray for locked/pending, black for completed.
+  const badgeStyle = step.complete
+    ? "bg-black text-white"
+    : isCurrent
+    ? "bg-[#dbeafe] text-[#1e40af]"
+    : locked
+    ? "bg-[#f3f4f6] text-[#6b7280]"
+    : "bg-[#eee5cf] text-[#6b5d3f]";
   const ring = step.complete
     ? "border-black/10 bg-white"
     : isCurrent
@@ -144,34 +197,28 @@ function StepRow({ step, stepNumber, onStart, isCurrent, locked, busy }) {
 
   return (
     <li className={`rounded-[20px] border p-6 transition ${ring}`}>
-      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:items-stretch md:justify-between">
         <div className="flex items-start gap-4">
-          {/* Icon with optional lock overlay for locked steps */}
-          <div className="relative shrink-0">
-            <div
-              className={`flex h-12 w-12 items-center justify-center rounded-[14px] border ${
-                step.complete
-                  ? "border-black/10 bg-black text-white"
-                  : isCurrent
-                  ? "border-black/15 bg-[#f7f5f1] text-[#111111]"
-                  : "border-black/10 bg-[#f7f5f1] text-[#9ca3af]"
-              }`}
-            >
-              {step.complete ? <CheckCircle2 className="h-5 w-5" /> : <Icon className="h-5 w-5" />}
-            </div>
-            {locked && !step.complete ? (
-              <span className="absolute -bottom-1 -right-1 grid h-5 w-5 place-items-center rounded-full border border-black/10 bg-white text-[#6b7280]">
-                <Lock className="h-3 w-3" />
-              </span>
-            ) : null}
+          <div
+            className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] ${
+              step.complete
+                ? "bg-black text-white"
+                : isCurrent
+                ? "bg-[#dbeafe] text-[#111111]"
+                : "bg-[#f4efe4] text-[#111111]"
+            }`}
+          >
+            {step.complete ? <CheckCircle2 className="h-5 w-5" /> : <Icon className="h-5 w-5" />}
           </div>
 
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#6b7280]">
+            <span
+              className={`inline-flex w-fit rounded-[6px] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${badgeStyle}`}
+            >
               {stateLabel}
-            </p>
-            <h3 className="font-display mt-1.5 flex items-baseline gap-2 text-[20px] leading-tight text-[#111111]">
-              <span className="text-[#9ca3af]">{stepNumber}.</span>
+            </span>
+            <h3 className="font-display mt-2 flex items-baseline gap-2 text-[20px] leading-tight text-[#111111]">
+              <span>{stepNumber}.</span>
               <span>{step.title}</span>
             </h3>
             <p className="mt-2 max-w-xl text-[14px] leading-6 text-[#4b5563]">
@@ -185,12 +232,12 @@ function StepRow({ step, stepNumber, onStart, isCurrent, locked, busy }) {
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center">
-          {step.complete ? (
+        <div className="flex shrink-0 items-center md:min-w-[200px] md:justify-center md:border-l md:border-black/[0.06] md:pl-6">
+          {step.complete && !step.optional ? (
             <span className="inline-flex items-center gap-1.5 rounded-[12px] border border-black/10 bg-white px-3 py-2 text-[12px] font-medium text-[#1f2937]">
               <BadgeCheck className="h-4 w-4" /> Done
             </span>
-          ) : isCurrent && !step.placeholder && step.action ? (
+          ) : (isCurrent || step.optional) && !step.placeholder && step.action ? (
             <button
               type="button"
               disabled={busy}
@@ -201,11 +248,15 @@ function StepRow({ step, stepNumber, onStart, isCurrent, locked, busy }) {
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <>
-                  Start
+                  {step.actionLabel || "Continue"}
                   <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
                 </>
               )}
             </button>
+          ) : locked ? (
+            <span className="inline-flex items-center gap-2 text-[14px] text-[#9ca3af]">
+              <Lock className="h-4 w-4" /> Locked
+            </span>
           ) : null}
         </div>
       </div>
@@ -285,6 +336,85 @@ function PersonaModal({ investor, onClose, onCompleted, onError }) {
   );
 }
 
+function OfferingDocumentsModal({ onClose }) {
+  const [docs, setDocs] = useState(null);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetchPortalDocuments()
+      .then(setDocs)
+      .catch((err) =>
+        setError(err?.response?.data?.message || "Could not load documents.")
+      );
+  }, []);
+
+  const categories = docs
+    ? Object.entries(docs).filter(([, list]) => list.length > 0)
+    : [];
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 p-4 backdrop-blur-sm"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <div className="flex max-h-[88vh] w-full max-w-[680px] flex-col rounded-[24px] border border-black/10 bg-white p-6 shadow-[0_30px_80px_rgba(17,24,39,0.18)]">
+        <div className="mb-5 flex items-start justify-between gap-4">
+          <div>
+            <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-[#6b7280]">
+              Step 1 · Offering documents
+            </p>
+            <h3 className="font-display mt-2 text-[26px] leading-tight text-[#111111]">
+              Review offering documents
+            </h3>
+            <p className="mt-2 text-[14px] leading-6 text-[#4b5563]">
+              Access, review, and download the current offering documents.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-black/10 text-[#6b7280] transition hover:border-black/30 hover:text-[#111111]"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto pr-1">
+          {error ? (
+            <p className="rounded-[12px] border border-[#ba645b]/20 bg-white p-4 text-[13px] text-[#ba645b]">
+              {error}
+            </p>
+          ) : !docs ? (
+            <p className="py-8 text-center text-sm text-[#6b7280]">
+              Loading documents…
+            </p>
+          ) : categories.length === 0 ? (
+            <p className="rounded-[12px] bg-[#fafaf8] px-4 py-8 text-center text-sm text-[#9ca3af]">
+              No offering documents are available yet. Check back soon.
+            </p>
+          ) : (
+            categories.map(([category, list]) => (
+              <section key={category}>
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#6b7280]">
+                  {CATEGORY_META[category]?.label || category}
+                </p>
+                <ul className="space-y-2">
+                  {list.map((doc) => (
+                    <DocumentRow key={doc.id} doc={doc} />
+                  ))}
+                </ul>
+              </section>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function DashboardPage() {
   const navigate = useNavigate();
   const [investor, setInvestor] = useState(null);
@@ -292,6 +422,8 @@ function DashboardPage() {
   const [actionError, setActionError] = useState(null);
   const [busyStep, setBusyStep] = useState(null);
   const [showPersona, setShowPersona] = useState(false);
+  const [showDocuments, setShowDocuments] = useState(false);
+  const [docsViewed, setDocsViewed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -306,6 +438,7 @@ function DashboardPage() {
         }
 
         setInvestor(data);
+        setDocsViewed(hasViewedOfferingDocs(data.id));
       } catch (err) {
         if (err?.response?.status === 401) {
           navigate("/login", { replace: true });
@@ -326,19 +459,27 @@ function DashboardPage() {
     };
   }, [navigate]);
 
-  const steps = useMemo(() => (investor ? buildSteps(investor) : []), [investor]);
+  const steps = useMemo(
+    () => (investor ? buildSteps(investor, docsViewed) : []),
+    [investor, docsViewed]
+  );
   const currentStepKey = useMemo(() => {
     if (!investor) return null;
     const current = steps.find((s) => !s.complete && s.current);
     if (current) return current.key;
-    return steps.find((s) => !s.complete)?.key ?? null;
+    // Optional steps never become "current" — they don't gate progression.
+    return steps.find((s) => !s.complete && !s.optional)?.key ?? null;
   }, [steps, investor]);
 
   const handleStart = async (step) => {
     setActionError(null);
     setBusyStep(step.key);
     try {
-      if (step.action === "persona") {
+      if (step.action === "review-documents") {
+        setShowDocuments(true);
+        markOfferingDocsViewed(investor.id);
+        setDocsViewed(true);
+      } else if (step.action === "persona") {
         const refreshed = await startPersonaInquiry();
         setInvestor(refreshed);
         setShowPersona(true);
@@ -404,11 +545,18 @@ function DashboardPage() {
   // just on `investment_status === "active"` is too loose because parallel mode
   // (or admin overrides) can flip funding to active while other steps are still
   // pending. Every step must report complete: true.
-  const onboardingComplete = steps.length > 0 && steps.every((s) => s.complete);
+  // Optional steps (e.g. reviewing offering documents) are excluded — skipping
+  // them must not keep an otherwise fully-onboarded investor out of the portal.
+  const requiredSteps = steps.filter((s) => !s.optional);
+  const onboardingComplete =
+    requiredSteps.length > 0 && requiredSteps.every((s) => s.complete);
   if (onboardingComplete) {
     return <PortalLayout investor={investor} setInvestor={setInvestor} />;
   }
 
+  // Per the reference design, the header indicator points at the first
+  // incomplete step — including the optional review step — purely as a visual
+  // cue; it has no effect on gating.
   const currentStepIndex = steps.findIndex((s) => !s.complete);
   const activeDot = currentStepIndex === -1 ? steps.length - 1 : currentStepIndex;
 
@@ -430,15 +578,19 @@ function DashboardPage() {
         <ol className="space-y-3">
           {steps.map((step, index) => {
             const parallelMode = investor?.platform?.allowParallelOnboarding === true;
+            // Optional steps neither lock nor count toward unlocking: skipping
+            // the offering-documents review must leave every other step exactly
+            // as it would be without it.
             const previousCompleted = steps
               .slice(0, index)
-              .every((s) => s.complete);
+              .every((s) => s.complete || s.optional);
             const isCurrent = parallelMode
               ? !step.complete
               : step.key === currentStepKey;
-            const locked = parallelMode
-              ? false
-              : !step.complete && !previousCompleted;
+            const locked =
+              parallelMode || step.optional
+                ? false
+                : !step.complete && !previousCompleted;
 
             if (step.key === "funding" && isCurrent && !locked && !step.complete) {
               return (
@@ -485,6 +637,10 @@ function DashboardPage() {
           </button>
         </footer>
       </div>
+
+      {showDocuments ? (
+        <OfferingDocumentsModal onClose={() => setShowDocuments(false)} />
+      ) : null}
 
       {showPersona ? (
         <PersonaModal
