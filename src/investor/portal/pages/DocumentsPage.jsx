@@ -9,10 +9,9 @@ import {
 } from "lucide-react";
 
 import {
+  downloadPortalDocument,
   fetchPortalDocuments,
-  portalDocumentDownloadUrl,
 } from "../../../services/investorPortalService";
-import { getInvestorAuthToken } from "../../../services/investorApi";
 
 export const CATEGORY_META = {
   legal: {
@@ -54,21 +53,20 @@ const formatDate = (iso) => {
 };
 
 export function DocumentRow({ doc }) {
+  const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState(null);
+
   const handleDownload = async () => {
-    const token = getInvestorAuthToken();
-    const url = portalDocumentDownloadUrl(doc.id);
-    // Use fetch + blob so we can attach the Bearer token; the backend issues
-    // a redirect to the actual file URL.
+    setDownloading(true);
+    setDownloadError(null);
     try {
-      const response = await fetch(url, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const finalUrl = response.url || url;
-      window.open(finalUrl, "_blank", "noopener");
-    } catch (err) {
-      // Fallback: open the endpoint directly (browser will receive the redirect).
-      window.open(url, "_blank", "noopener");
+      await downloadPortalDocument(doc);
+    } catch (error) {
+      setDownloadError(
+        error?.response?.data?.message || "Could not download this document."
+      );
+    } finally {
+      setDownloading(false);
     }
   };
 
@@ -102,10 +100,17 @@ export function DocumentRow({ doc }) {
       <button
         type="button"
         onClick={handleDownload}
+        disabled={downloading}
         className="inline-flex items-center gap-1.5 rounded-[10px] border border-black/10 bg-white px-3 py-1.5 text-xs font-medium text-ink shadow-soft transition hover:border-black/30"
       >
-        <Download className="h-3.5 w-3.5" /> Download
+        <Download className="h-3.5 w-3.5" />
+        {downloading ? "Downloading…" : "Download"}
       </button>
+      {downloadError ? (
+        <p className="basis-full text-right text-xs text-red-700">
+          {downloadError}
+        </p>
+      ) : null}
     </li>
   );
 }

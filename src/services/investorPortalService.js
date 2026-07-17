@@ -133,6 +133,23 @@ export const fetchPortalDocuments = async () => {
   return data.data;
 };
 
+export const downloadPortalDocument = async (document) => {
+  const response = await investorApi.get(
+    `/portal/documents/${document.id}/download`,
+    { responseType: "blob" }
+  );
+  const blobUrl = window.URL.createObjectURL(response.data);
+  const link = window.document.createElement("a");
+  link.href = blobUrl;
+  link.download = document.title?.toLowerCase().endsWith(".pdf")
+    ? document.title
+    : `${document.title || "offering-document"}.pdf`;
+  window.document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(blobUrl);
+};
+
 export const fetchCommunications = async () => {
   const { data } = await investorApi.get("/portal/communications");
   return data.data;
@@ -141,11 +158,4 @@ export const fetchCommunications = async () => {
 export const fetchCommunication = async (id) => {
   const { data } = await investorApi.get(`/portal/communications/${id}`);
   return data;
-};
-
-export const portalDocumentDownloadUrl = (id) => {
-  const base =
-    import.meta.env.VITE_LARAVEL_INVESTOR_API_URL ||
-    "http://localhost:8000/api/investor";
-  return `${base}/portal/documents/${id}/download`;
 };
