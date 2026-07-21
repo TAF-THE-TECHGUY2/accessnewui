@@ -51,8 +51,8 @@ function LoginPage() {
         </h1>
 
         <p className="mt-4 max-w-[360px] text-center text-[14px] leading-6 text-[#8a8f98]">
-          Continue your accredited investor onboarding steps and check on the
-          status of your investment account.
+          Continue your accredited investor onboarding or access your investment
+          account.
         </p>
 
         <form
@@ -128,12 +128,12 @@ function LoginPage() {
         </form>
 
         <p className="mt-6 text-center text-[13px] text-[#6b7280]">
-          New to Access Properties?{" "}
+          New to the accredited investor pathway?{" "}
           <a
             href="/"
             className="font-medium text-[#111111] underline decoration-black/40 underline-offset-[3px] transition hover:text-[#374151]"
           >
-            Start your application
+            Create an account
           </a>
         </p>
       </div>
