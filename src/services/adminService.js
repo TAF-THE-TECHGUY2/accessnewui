@@ -299,3 +299,34 @@ export const overrideMarkFunded = (investorCode, amount, reason) =>
 
 export const overrideFullyActivate = (investorCode, amount, reason) =>
   runOverrideAction(investorCode, "fully-activate", { reason, amount });
+
+// Admin-editable transactional email templates
+export const getEmailTemplates = async () => {
+  const { data } = await api.get("/email-templates");
+  return data.data;
+};
+
+export const getEmailTemplate = async (key) => {
+  const { data } = await api.get(`/email-templates/${key}`);
+  return data;
+};
+
+export const updateEmailTemplate = async (key, payload) => {
+  const { data } = await api.put(`/email-templates/${key}`, payload);
+  return data;
+};
+
+export const previewEmailTemplate = async (key, payload) => {
+  const { data } = await api.post(`/email-templates/${key}/preview`, payload);
+  return data;
+};
+
+export const sendEmailTemplateTest = async (key, email) => {
+  const { data } = await api.post(`/email-templates/${key}/test`, { email });
+  return data;
+};
+
+export const resetEmailTemplate = async (key) => {
+  const { data } = await api.post(`/email-templates/${key}/reset`);
+  return data;
+};

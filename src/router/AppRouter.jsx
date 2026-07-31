@@ -11,6 +11,7 @@ const InvestorsPage = lazy(() => import("../admin/pages/InvestorsPage"));
 const InvestorDetailPage = lazy(() => import("../admin/pages/InvestorDetailPage"));
 const KycVerificationPage = lazy(() => import("../admin/pages/KycVerificationPage"));
 const EmailLogsPage = lazy(() => import("../admin/pages/EmailLogsPage"));
+const EmailTemplatesPage = lazy(() => import("../admin/pages/EmailTemplatesPage"));
 const ReportsPage = lazy(() => import("../admin/pages/ReportsPage"));
 const SettingsPage = lazy(() => import("../admin/pages/SettingsPage"));
 const FundsPage = lazy(() => import("../admin/pages/FundsPage"));
@@ -63,6 +64,7 @@ function AppRouter() {
             <Route path="funds/:code" element={<FundDetailPage />} />
             <Route path="communications" element={<AdminCommunicationsPage />} />
             <Route path="email-logs" element={<EmailLogsPage />} />
+            <Route path="email-templates" element={<EmailTemplatesPage />} />
             <Route path="reports" element={<ReportsPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>

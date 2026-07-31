@@ -4,6 +4,7 @@ import {
   Briefcase,
   ChevronLeft,
   ChevronRight,
+  FileText,
   LayoutDashboard,
   Mail,
   Megaphone,
@@ -21,6 +22,7 @@ const navigation = [
   { label: "Funds", to: "/admin/funds", icon: Briefcase },
   { label: "Communications", to: "/admin/communications", icon: Megaphone },
   { label: "Email Logs", to: "/admin/email-logs", icon: Mail },
+  { label: "Email Templates", to: "/admin/email-templates", icon: FileText },
   { label: "Reports", to: "/admin/reports", icon: BarChart3 },
   { label: "Settings", to: "/admin/settings", icon: Settings },
 ];
