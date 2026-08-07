@@ -19,7 +19,88 @@ import {
   fetchPortfolio,
 } from "../../../services/investorPortalService";
 
+import StripeFundingPanel from "../../components/StripeFundingPanel";
+
 const RANGES = ["1M", "3M", "6M", "1Y", "All"];
+
+/**
+ * Additional subscription into a fund the investor already holds.
+ *
+ * Two steps on purpose: the amount is captured first, then handed to the Stripe
+ * panel. Nothing is created server-side until an amount is submitted, so simply
+ * viewing this tab never mints a PaymentIntent.
+ */
+function InvestMorePanel({ holding, onFunded }) {
+  const [amount, setAmount] = useState("");
+  const [confirmed, setConfirmed] = useState(null);
+
+  if (confirmed != null) {
+    return (
+      <div className="space-y-3">
+        <StripeFundingPanel topUpAmount={confirmed} onFunded={onFunded} />
+        <button
+          type="button"
+          onClick={() => {
+            setConfirmed(null);
+            setAmount("");
+          }}
+          className="text-sm text-[#6b7280] underline underline-offset-4 hover:text-[#111111]"
+        >
+          Change amount
+        </button>
+      </div>
+    );
+  }
+
+  const parsed = Number(amount);
+  const valid = amount !== "" && Number.isFinite(parsed) && parsed > 0;
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (valid) setConfirmed(parsed);
+      }}
+      className="rounded-[22px] border border-black/10 bg-white p-6 shadow-[0_14px_28px_rgba(17,24,39,0.08)]"
+    >
+      <p className="text-[11px] uppercase tracking-[0.16em] text-[#6b7280]">
+        Add to your position
+      </p>
+      <h3 className="font-display mt-1 text-[22px] leading-tight text-[#111111]">
+        Invest more in {holding.fundName}
+      </h3>
+      <p className="mt-2 text-sm text-[#4b5563]">
+        New units are issued at the fund&rsquo;s current book value on the day your
+        payment settles, not at today&rsquo;s price.
+      </p>
+
+      <div className="mt-5 flex flex-wrap items-center gap-3">
+        <div className="relative">
+          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-[#6b7280]">
+            $
+          </span>
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            inputMode="decimal"
+            placeholder="25,000"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            className="h-12 w-56 rounded-[14px] border border-black/10 pl-7 pr-3 text-sm outline-none focus:border-teal-600"
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={!valid}
+          className="inline-flex h-12 items-center rounded-[14px] bg-black px-6 text-sm font-medium text-white transition hover:bg-[#1f2937] disabled:opacity-40"
+        >
+          Continue
+        </button>
+      </div>
+    </form>
+  );
+}
 
 const formatCurrency = (amount, currency = "USD") =>
   new Intl.NumberFormat("en-US", {
@@ -512,14 +593,15 @@ function InvestmentPage() {
   const [loading, setLoading] = useState(true);
   const [activeFundCode, setActiveFundCode] = useState(null);
 
+  const load = () =>
+    Promise.all([fetchPortfolio(), fetchHoldings()]).then(([p, h]) => {
+      setPortfolio(p);
+      setHoldings(h);
+      setActiveFundCode((curr) => curr ?? h[0]?.fundCode ?? null);
+    });
+
   useEffect(() => {
-    Promise.all([fetchPortfolio(), fetchHoldings()])
-      .then(([p, h]) => {
-        setPortfolio(p);
-        setHoldings(h);
-        setActiveFundCode((curr) => curr ?? h[0]?.fundCode ?? null);
-      })
-      .finally(() => setLoading(false));
+    load().finally(() => setLoading(false));
   }, []);
 
   // The selector scopes the chart and composition below it. The totals panel
@@ -600,6 +682,7 @@ function InvestmentPage() {
           <>
             <PerformanceChart fundCode={activeHolding.fundCode} />
             <HoldingDetail holding={activeHolding} />
+            <InvestMorePanel holding={activeHolding} onFunded={load} />
           </>
         ) : null}
       </section>

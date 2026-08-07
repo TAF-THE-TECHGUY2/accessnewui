@@ -71,8 +71,23 @@ export const completeInvestReadyVerification = async ({ code, state }) => {
   return data.data;
 };
 
-export const fetchFundingPaymentIntent = async () => {
-  const { data } = await investorApi.post("/funding/payment-intent");
+// Omit `amount` for the onboarding subscription — the server bills the original
+// commitment. Pass one to open an additional subscription on an active position.
+export const fetchFundingPaymentIntent = async (amount) => {
+  const { data } = await investorApi.post(
+    "/funding/payment-intent",
+    amount != null ? { amount } : {},
+  );
+  return data;
+};
+
+// Only succeeds while demo mode is enabled in admin settings; the server
+// returns 403 otherwise.
+export const simulateFundingPayment = async (amount) => {
+  const { data } = await investorApi.post(
+    "/funding/simulate",
+    amount != null ? { amount } : {},
+  );
   return data;
 };
 

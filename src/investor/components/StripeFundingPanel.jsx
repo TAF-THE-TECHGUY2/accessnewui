@@ -5,6 +5,7 @@ import { loadStripe } from "@stripe/stripe-js";
 import {
   fetchFundingPaymentIntent,
   fetchFundingStatus,
+  simulateFundingPayment,
 } from "../../services/investorPortalService";
 
 const formatCurrency = (amount, currency = "USD") =>
@@ -14,7 +15,10 @@ const formatCurrency = (amount, currency = "USD") =>
     maximumFractionDigits: 0,
   }).format(amount ?? 0);
 
-function StripeFundingPanel({ investor, onInvestorUpdated }) {
+// `topUpAmount` switches the panel to an additional subscription on an already
+// active position. Left undefined it behaves exactly as the onboarding step,
+// billing the original commitment.
+function StripeFundingPanel({ investor, onInvestorUpdated, topUpAmount, onFunded }) {
   const [intent, setIntent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [confirming, setConfirming] = useState(false);
@@ -24,7 +28,7 @@ function StripeFundingPanel({ investor, onInvestorUpdated }) {
   const load = async () => {
     try {
       setError(null);
-      const data = await fetchFundingPaymentIntent();
+      const data = await fetchFundingPaymentIntent(topUpAmount);
       setIntent(data);
     } catch (err) {
       const message =
@@ -39,6 +43,30 @@ function StripeFundingPanel({ investor, onInvestorUpdated }) {
   useEffect(() => {
     load();
   }, []);
+
+  // Demo mode settles server-side with no Stripe involvement at all — the SDK
+  // is never even loaded, so this works with no payment credentials present.
+  const handleDemoPay = async () => {
+    setConfirming(true);
+    setError(null);
+    try {
+      await simulateFundingPayment(topUpAmount);
+      setStatus("succeeded");
+      const refreshed = await fetchFundingStatus();
+      if (onInvestorUpdated && refreshed?.investmentStatus) {
+        onInvestorUpdated({
+          ...investor,
+          investmentStatus: refreshed.investmentStatus,
+          walletStatus: refreshed.walletStatus,
+        });
+      }
+      if (onFunded) onFunded();
+    } catch (err) {
+      setError(err?.response?.data?.message || "Demo payment failed.");
+    } finally {
+      setConfirming(false);
+    }
+  };
 
   const handlePay = async () => {
     if (!intent?.clientSecret || !intent?.publishableKey) return;
@@ -101,6 +129,7 @@ function StripeFundingPanel({ investor, onInvestorUpdated }) {
         });
       }
       await load();
+      if (onFunded) onFunded();
     } catch (err) {
       setError(err?.message || "Payment failed.");
     } finally {
@@ -116,12 +145,21 @@ function StripeFundingPanel({ investor, onInvestorUpdated }) {
     );
   }
 
-  const succeeded =
-    intent?.status === "succeeded" || investor?.investmentStatus === "active";
-  const processing =
-    intent?.status === "processing" ||
-    status === "processing" ||
-    investor?.investmentStatus === "funds_sent";
+  // A top-up investor is already active, so their account status says nothing
+  // about whether *this* payment has landed — only the intent does. Reading the
+  // account status here would render the panel as already-paid on first load.
+  const isTopUp = topUpAmount != null;
+  const isDemo = intent?.mode === "demo";
+  const succeeded = isDemo
+    ? status === "succeeded"
+    : isTopUp
+    ? intent?.status === "succeeded"
+    : intent?.status === "succeeded" || investor?.investmentStatus === "active";
+  const processing = isTopUp
+    ? intent?.status === "processing" || status === "processing"
+    : intent?.status === "processing" ||
+      status === "processing" ||
+      investor?.investmentStatus === "funds_sent";
 
   return (
     <div className="rounded-[22px] border border-black/10 bg-white p-6 shadow-[0_14px_28px_rgba(17,24,39,0.08)]">
@@ -131,7 +169,7 @@ function StripeFundingPanel({ investor, onInvestorUpdated }) {
         </div>
         <div className="flex-1">
           <p className="text-[11px] uppercase tracking-[0.16em] text-[#6b7280]">
-            Funding · Stripe ACH
+            {isDemo ? "Funding · Demo mode" : "Funding · Stripe ACH"}
           </p>
           <h3 className="font-display mt-1 text-[22px] leading-tight text-[#111111]">
             {succeeded
@@ -141,7 +179,11 @@ function StripeFundingPanel({ investor, onInvestorUpdated }) {
               : `Fund your subscription — ${formatCurrency(intent?.amount, intent?.currency)}`}
           </h3>
           <p className="mt-2 text-sm text-[#4b5563]">
-            {succeeded
+            {isDemo
+              ? succeeded
+                ? "Demo payment recorded. Units were issued at the fund's current book value — no money changed hands."
+                : "Demo mode is on. This settles instantly and issues real units at the fund's current book value, without transferring any funds."
+              : succeeded
               ? "Your funds have settled and your investment is active. You'll get a confirmation email shortly."
               : processing
               ? "Your ACH debit is in flight. It typically settles in 3-5 business days. We'll email you when funds confirm."
@@ -157,7 +199,27 @@ function StripeFundingPanel({ investor, onInvestorUpdated }) {
         </div>
       ) : null}
 
-      {!succeeded && !processing ? (
+      {!succeeded && !processing && isDemo ? (
+        <button
+          type="button"
+          onClick={handleDemoPay}
+          disabled={confirming}
+          className="mt-5 inline-flex h-12 items-center justify-center gap-2 rounded-[14px] bg-black px-6 text-sm font-medium text-white shadow-[0_14px_24px_rgba(17,24,39,0.24)] transition hover:bg-[#1f2937] disabled:opacity-60"
+        >
+          {confirming ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" /> Recording…
+            </>
+          ) : (
+            <>
+              <Banknote className="h-4 w-4" /> Complete demo payment of{" "}
+              {formatCurrency(intent?.amount, intent?.currency)}
+            </>
+          )}
+        </button>
+      ) : null}
+
+      {!succeeded && !processing && !isDemo ? (
         <button
           type="button"
           onClick={handlePay}
@@ -180,7 +242,7 @@ function StripeFundingPanel({ investor, onInvestorUpdated }) {
         <div className="mt-5 flex items-center gap-2 text-sm text-teal-700">
           <CheckCircle2 className="h-4 w-4" />
           <span className="font-mono text-xs text-gray-500">
-            {intent?.paymentIntentId}
+            {isDemo ? "demo — no funds transferred" : intent?.paymentIntentId}
           </span>
         </div>
       )}

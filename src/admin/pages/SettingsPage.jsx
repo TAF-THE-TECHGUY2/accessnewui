@@ -225,6 +225,38 @@ function SettingsPage() {
                 }
               />
             </label>
+            <label
+              className={`flex items-start justify-between gap-4 rounded-2xl border p-4 text-sm ${
+                settings.demoPaymentsEnabled
+                  ? "border-red-300 bg-red-50/60"
+                  : "border-sand-200"
+              }`}
+            >
+              <span>
+                <span className="font-medium text-ink">Demo payment mode</span>
+                <span className="mt-1 block text-xs font-normal text-gray-500">
+                  Lets investors complete the funding step without Stripe, for
+                  demos on environments with no payment credentials. Units are
+                  issued for real at the fund&rsquo;s current book value.
+                </span>
+                {settings.demoPaymentsEnabled ? (
+                  <span className="mt-2 block text-xs font-medium text-red-700">
+                    On — the platform will record capital that was never
+                    received. Never leave this enabled in production.
+                  </span>
+                ) : null}
+              </span>
+              <input
+                type="checkbox"
+                checked={settings.demoPaymentsEnabled || false}
+                onChange={(event) =>
+                  setSettings((current) => ({
+                    ...current,
+                    demoPaymentsEnabled: event.target.checked,
+                  }))
+                }
+              />
+            </label>
             <div>
               <label className="mb-2 block text-sm font-semibold text-ink">
                 Support email
