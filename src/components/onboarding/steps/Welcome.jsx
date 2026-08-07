@@ -15,7 +15,7 @@ const SEC_FOOTNOTES_URL = "https://www.sec.gov/investor";
 const FEATURES = [
   {
     icon: Building2,
-    label: "Direct accredited investment in ARE I",
+    label: "Direct accredited investment in AREF I",
   },
   {
     icon: CircleDollarSign,
@@ -40,7 +40,7 @@ function Welcome({ onBegin }) {
           <h1 className="font-display text-[38px] leading-[1.02] text-[#111111] sm:text-[46px] xl:text-[54px]">
             Invest in Access
             <br />
-            Real Estate I
+            Real Estate Fund I
           </h1>
 
           <p className="mt-4 max-w-[520px] text-[15px] leading-6 text-[#4b5563]">

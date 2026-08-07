@@ -61,7 +61,7 @@ export const faqItems = [
   },
   {
     "_id": "6a5e0f07350524ef4b9f00f8",
-    "question": "How does ARE I select investments?",
+    "question": "How does AREF I select investments?",
     "answerHtml": "<p>Potential investments are evaluated through local sourcing and disciplined underwriting. Factors may include: (1) Location and neighborhood fundamentals; (2) Acquisition cost; (3) Existing and potential rental income; (4) Property condition; (5) Improvement requirements; (6) Financing availability and cost; (7) Operating expenses; (8) Market demand; (9) Expected risk and return; and (10) Fit within the broader portfolio. No acquisition is assured of meeting its original projections.</p>",
     "category": "Fund Operations",
     "order": 1
@@ -75,8 +75,8 @@ export const faqItems = [
   },
   {
     "_id": "6a5e1154350524ef4b9f018f",
-    "question": "What is Access Real Estate I?",
-    "answerHtml": "<p>Access Real Estate I LLC, or ARE I, is a diversified residential real estate investment fund focused on Greater Boston. The fund pursues income and long-term value creation through the acquisition, improvement, operation, financing, and selective disposition of residential real estate assets.</p>",
+    "question": "What is Access Real Estate Fund I?",
+    "answerHtml": "<p>Access Real Estate Fund I LLC, or AREF I, is a diversified residential real estate investment fund focused on Greater Boston. The fund pursues income and long-term value creation through the acquisition, improvement, operation, financing, and selective disposition of residential real estate assets.</p>",
     "category": "Offerings and Eligibility",
     "order": 1
   },
@@ -90,7 +90,7 @@ export const faqItems = [
   {
     "_id": "6a5cd8d3350524ef4b9efd98",
     "question": "Who owns the properties?",
-    "answerHtml": "Properties are held by Access Real Estate I LLC or by property-owning entities within the fund’s structure, as described in the applicable governing and offering documents.\n\nInvestors acquire securities or membership interests through the relevant offering. They do not receive a deeded fractional interest in any individual property.",
+    "answerHtml": "Properties are held by Access Real Estate Fund I LLC or by property-owning entities within the fund’s structure, as described in the applicable governing and offering documents.\n\nInvestors acquire securities or membership interests through the relevant offering. They do not receive a deeded fractional interest in any individual property.",
     "category": "Fund Operations",
     "order": 2
   },
@@ -104,7 +104,7 @@ export const faqItems = [
   {
     "_id": "6a5e118a350524ef4b9f0196",
     "question": "How is Access Properties structured?",
-    "answerHtml": "<p>The Access platform brings together four legally distinct entities: (1) Access Real Estate I LLC: Investment vehicle; (2) Access Investment Management, Inc.: Investment manager; (3) Access Property Advisors LLC: Property operator; and (4) Access Properties LLC: Investor-facing digital platform. Their respective responsibilities and relationships are described in the applicable governing and offering documents.</p>",
+    "answerHtml": "<p>The Access platform brings together four legally distinct entities: (1) Access Real Estate Fund I LLC: Investment vehicle; (2) Access Investment Management, Inc.: Investment manager; (3) Access Property Advisors LLC: Property operator; and (4) Access Properties LLC: Investor-facing digital platform. Their respective responsibilities and relationships are described in the applicable governing and offering documents.</p>",
     "category": "Offerings and Eligibility",
     "order": 2
   },
@@ -118,21 +118,21 @@ export const faqItems = [
   {
     "_id": "6a5cd8fb350524ef4b9efdbf",
     "question": "Can I choose specific properties?",
-    "answerHtml": "<p>No. An investment in Access Real Estate I represents an interest in the fund rather than a direct investment in a particular property. Property acquisition, financing, improvement, operating, and disposition decisions are made on behalf of the fund in accordance with its governing documents.</p>",
+    "answerHtml": "<p>No. An investment in Access Real Estate Fund I represents an interest in the fund rather than a direct investment in a particular property. Property acquisition, financing, improvement, operating, and disposition decisions are made on behalf of the fund in accordance with its governing documents.</p>",
     "category": "Fund Operations",
     "order": 3
   },
   {
     "_id": "6a5cde51350524ef4b9effc8",
     "question": "How is net total return calculated?",
-    "answerHtml": "<p>Net total return reflects changes in net asset value per unit together with distributions, net of applicable fees and expenses. The current performance figure, measurement period, methodology note, and applicable past-performance disclosure are presented on the Access Real Estate I fund page.</p>",
+    "answerHtml": "<p>Net total return reflects changes in net asset value per unit together with distributions, net of applicable fees and expenses. The current performance figure, measurement period, methodology note, and applicable past-performance disclosure are presented on the Access Real Estate Fund I fund page.</p>",
     "category": "Performance, Fees and Liquidity",
     "order": 3
   },
   {
     "_id": "6a5e1236350524ef4b9f01b2",
     "question": "Will Access Properties offer more funds?",
-    "answerHtml": "<p>Access Properties is designed to support additional investment vehicles and strategies over time. Each future fund or offering would be a separate opportunity with its own investment strategy, governing documents, economics, risks, eligibility standards, and investment process. An investment in Access Real Estate I does not automatically provide an interest in any future fund.</p>",
+    "answerHtml": "<p>Access Properties is designed to support additional investment vehicles and strategies over time. Each future fund or offering would be a separate opportunity with its own investment strategy, governing documents, economics, risks, eligibility standards, and investment process. An investment in Access Real Estate Fund I does not automatically provide an interest in any future fund.</p>",
     "category": "Offerings and Eligibility",
     "order": 3
   },
@@ -258,7 +258,7 @@ export const faqItems = [
   {
     "_id": "6a5e101d350524ef4b9f013a",
     "question": "What fees apply?",
-    "answerHtml": "<p>Access Real Estate I currently discloses an annual management fee of 1%, calculated on assets under management. Other fund, transaction, professional, operating, financing, platform, or offering expenses may apply. Investors should rely on the applicable offering documents for a complete description of fees, expenses, allocations, and potential conflicts.</p>",
+    "answerHtml": "<p>Access Real Estate Fund I currently discloses an annual management fee of 1%, calculated on assets under management. Other fund, transaction, professional, operating, financing, platform, or offering expenses may apply. Investors should rely on the applicable offering documents for a complete description of fees, expenses, allocations, and potential conflicts.</p>",
     "category": "Performance, Fees and Liquidity",
     "order": 8
   },
@@ -286,14 +286,14 @@ export const faqItems = [
   {
     "_id": "6a5e11e4350524ef4b9f019d",
     "question": "What investment pathways are available?",
-    "answerHtml": "<p>Access Real Estate I is currently available through two separate investment pathways: (1) Direct offering, available to verified accredited investors, with a current minimum investment of $10,000; OR (2) Regulation Crowdfunding offering, available through the registered funding portal administering the offering with a current minimum investment of $100. The offerings are conducted under different securities-law exemptions and may have different eligibility requirements, documentation, processing procedures, fees, and investor rights. Regulation Crowdfunding transactions must occur through an SEC-registered intermediary, and individual investment limits may apply.</p>",
+    "answerHtml": "<p>Access Real Estate Fund I is currently available through two separate investment pathways: (1) Direct offering, available to verified accredited investors, with a current minimum investment of $10,000; OR (2) Regulation Crowdfunding offering, available through the registered funding portal administering the offering with a current minimum investment of $100. The offerings are conducted under different securities-law exemptions and may have different eligibility requirements, documentation, processing procedures, fees, and investor rights. Regulation Crowdfunding transactions must occur through an SEC-registered intermediary, and individual investment limits may apply.</p>",
     "category": "Offerings and Eligibility",
     "order": 9
   },
   {
     "_id": "6a5e1071350524ef4b9f014f",
     "question": "What is the expected holding period?",
-    "answerHtml": "<p>There is no guaranteed or fixed holding period. Access Real Estate I should be viewed as a long-term and illiquid investment. The timing of refinancings, property sales, withdrawals, or other liquidity events depends on property performance, market conditions, financing conditions, portfolio needs, and management decisions.</p>",
+    "answerHtml": "<p>There is no guaranteed or fixed holding period. Access Real Estate Fund I should be viewed as a long-term and illiquid investment. The timing of refinancings, property sales, withdrawals, or other liquidity events depends on property performance, market conditions, financing conditions, portfolio needs, and management decisions.</p>",
     "category": "Performance, Fees and Liquidity",
     "order": 10
   },
@@ -307,7 +307,7 @@ export const faqItems = [
   {
     "_id": "6a5e1058350524ef4b9f0148",
     "question": "Can I withdraw or sell my investment?",
-    "answerHtml": "<p>Private fund investments are illiquid and there is no established secondary market. For Access Real Estate I, withdrawal requests may be permitted after the first year, subject to the fund terms and available liquidity. Permission to submit a request does not guarantee that the request will be accepted or funded. Crowdfunding securities are also generally subject to federal transfer restrictions during the first year after purchase, with limited exceptions. Investors should review the transfer, withdrawal, and redemption provisions applicable to their specific pathway.</p>",
+    "answerHtml": "<p>Private fund investments are illiquid and there is no established secondary market. For Access Real Estate Fund I, withdrawal requests may be permitted after the first year, subject to the fund terms and available liquidity. Permission to submit a request does not guarantee that the request will be accepted or funded. Crowdfunding securities are also generally subject to federal transfer restrictions during the first year after purchase, with limited exceptions. Investors should review the transfer, withdrawal, and redemption provisions applicable to their specific pathway.</p>",
     "category": "Performance, Fees and Liquidity",
     "order": 11
   },

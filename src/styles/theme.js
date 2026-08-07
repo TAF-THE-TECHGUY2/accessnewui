@@ -22,10 +22,10 @@ export const HERO_IMAGES = {
 
 // Marketing copy block used in two places — fund overview card + complete page.
 export const FUND_OVERVIEW = {
-  code: "are-i",
-  name: "Access Real Estate I",
-  shortName: "Access Real Estate I",
-  legalName: "Access Real Estate I LLC",
+  code: "aref-i",
+  name: "Access Real Estate Fund I",
+  shortName: "Access Real Estate Fund I",
+  legalName: "Access Real Estate Fund I LLC",
   description:
     "The fund invests in a diversified portfolio of residential assets across Boston and its surrounding suburbs, targeting stable income and long-term appreciation through value-add investments.",
   whatWeInvestIn:
@@ -69,8 +69,8 @@ export const FUND_OVERVIEW = {
 
 export const ECOSYSTEM = [
   {
-    code: "ARE I",
-    fullName: "Access Real Estate I LLC",
+    code: "AREF I",
+    fullName: "Access Real Estate Fund I LLC",
     role: "INVESTMENT VEHICLE",
     logo: "/assets/ARE%20I.png",
   },

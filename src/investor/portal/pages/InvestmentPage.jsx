@@ -8,7 +8,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { TrendingDown, TrendingUp } from "lucide-react";
+import { ChevronDown, Info, TrendingDown, TrendingUp } from "lucide-react";
 
 import {
   fetchHoldingDistributions,
@@ -37,6 +37,162 @@ const formatCurrencyDetailed = (amount) =>
 
 const formatPercent = (value) =>
   `${(value ?? 0) >= 0 ? "+" : ""}${(value ?? 0).toFixed(2)}%`;
+
+const formatDate = (iso) =>
+  iso
+    ? new Date(iso).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    : "—";
+
+/**
+ * Explains a negative position caused by the entry premium.
+ *
+ * An investor who pays book value plus a premium is underwater the moment they
+ * buy, by exactly the premium. That is the deal they agreed to, not a loss —
+ * but unexplained it reads as a bug and generates support tickets.
+ *
+ * Note the premium shows as a smaller percentage of the position than the rate
+ * charged: a 5% premium on top of book value is 5/105 of what was actually paid.
+ * Both figures are shown so the two reconcile.
+ */
+function PremiumNotice({ holding }) {
+  const premiumPaid = holding.premiumPaid ?? 0;
+
+  if (premiumPaid <= 0) {
+    return null;
+  }
+
+  const stillRecovering = holding.gainLoss < 0;
+
+  return (
+    <div
+      className={`mt-5 flex items-start gap-3 rounded-[14px] border p-4 ${
+        stillRecovering
+          ? "border-amber-200 bg-amber-50"
+          : "border-black/10 bg-[#f7f5f1]"
+      }`}
+    >
+      <Info
+        className={`mt-0.5 h-4 w-4 shrink-0 ${
+          stillRecovering ? "text-amber-700" : "text-[#6b7280]"
+        }`}
+      />
+      <div className="text-[13px] leading-6 text-[#1f2937]">
+        <p>
+          You entered at{" "}
+          <strong>${(holding.entryPrice ?? 0).toFixed(2)}</strong> per unit — the{" "}
+          <strong>${(holding.entryBookValue ?? 0).toFixed(2)}</strong> book value
+          plus a{" "}
+          <strong>{(holding.premiumPct ?? 0).toFixed(1)}% entry premium</strong>{" "}
+          of {formatCurrencyDetailed(premiumPaid)}.
+        </p>
+        {stillRecovering ? (
+          <p className="mt-1.5 text-[#4b5563]">
+            Your position shows a paper loss because the premium is not yet
+            recovered. This is expected — the premium reflects entering an
+            established portfolio, and is typically recovered through
+            appreciation and distributions.
+          </p>
+        ) : (
+          <p className="mt-1.5 text-[#4b5563]">
+            That premium has been recovered — your position is above what you
+            paid.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * AUM fee disclosure. Annex 3 requires three figures, not one: the rate, the
+ * amount charged for the most recent period, and the cumulative total to date.
+ */
+function AumFeeDisclosure({ fees }) {
+  const rate = fees.aumRatePct;
+  const period = fees.aumCurrentPeriod;
+
+  if (rate == null) {
+    return null;
+  }
+
+  return (
+    <div className="mt-4 grid gap-3 rounded-[14px] border border-black/10 bg-white p-4 sm:grid-cols-3">
+      <div>
+        <p className="text-[11px] uppercase tracking-[0.14em] text-[#6b7280]">
+          Rate
+        </p>
+        <p className="mt-1 text-[15px] text-[#111111]">
+          {rate.toFixed(2)}% per year
+        </p>
+        <p className="mt-0.5 text-[11px] text-[#9ca3af]">charged quarterly</p>
+      </div>
+      <div>
+        <p className="text-[11px] uppercase tracking-[0.14em] text-[#6b7280]">
+          This period
+        </p>
+        <p className="mt-1 text-[15px] text-[#111111]">
+          {period ? formatCurrencyDetailed(period.amount) : "—"}
+        </p>
+        <p className="mt-0.5 text-[11px] text-[#9ca3af]">
+          {period
+            ? `${formatDate(period.periodStart)} – ${formatDate(period.periodEnd)}`
+            : "no fees charged yet"}
+        </p>
+      </div>
+      <div>
+        <p className="text-[11px] uppercase tracking-[0.14em] text-[#6b7280]">
+          Total to date
+        </p>
+        <p className="mt-1 text-[15px] text-[#111111]">
+          {formatCurrencyDetailed(fees.totalAum)}
+        </p>
+        <p className="mt-0.5 text-[11px] text-[#9ca3af]">
+          {fees.aum?.length ?? 0} period{(fees.aum?.length ?? 0) === 1 ? "" : "s"}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Fund switcher. Only rendered when the investor holds more than one fund —
+ * a dropdown with a single option is noise.
+ */
+function FundSelector({ holdings, activeCode, onChange }) {
+  if (holdings.length < 2) {
+    return null;
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-3">
+      <label
+        htmlFor="fund-selector"
+        className="text-[11px] uppercase tracking-[0.14em] text-[#6b7280]"
+      >
+        Fund
+      </label>
+      <div className="relative">
+        <select
+          id="fund-selector"
+          value={activeCode}
+          onChange={(e) => onChange(e.target.value)}
+          className="h-11 appearance-none rounded-[12px] border border-black/15 bg-white pl-4 pr-10 text-[14px] text-[#111111] outline-none focus:border-[#111111]"
+        >
+          {holdings.map((h) => (
+            <option key={h.fundCode} value={h.fundCode}>
+              {h.fundName}
+            </option>
+          ))}
+        </select>
+        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9ca3af]" />
+      </div>
+    </div>
+  );
+}
 
 function StatCard({ label, value, sub, trend }) {
   const isPositive = (trend ?? 0) >= 0;
@@ -205,7 +361,16 @@ function HoldingDetail({ holding }) {
 
       <dl className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         <DetailField label="Amount invested" value={formatCurrency(holding.amountInvested)} />
-        <DetailField label="Current unit price" value={`$${holding.currentUnitPrice.toFixed(4)}`} />
+        <DetailField
+          label="Entry price"
+          value={holding.entryPrice != null ? `$${holding.entryPrice.toFixed(4)}` : "—"}
+          hint={
+            holding.transactionCount > 1
+              ? `weighted across ${holding.transactionCount} purchases`
+              : formatDate(holding.firstTransactionDate)
+          }
+        />
+        <DetailField label="Current unit price" value={`$${holding.currentUnitPrice.toFixed(4)}`} hint="book value" />
         <DetailField label="Total units held" value={holding.totalUnits.toFixed(2)} />
         <DetailField label="Current value" value={formatCurrency(holding.currentValue)} />
         <DetailField
@@ -217,6 +382,8 @@ function HoldingDetail({ holding }) {
         <DetailField label="Annualized return" value={formatPercent(holding.annualizedReturnPct)} positive={holding.annualizedReturnPct >= 0} />
         <DetailField label="Total distributions" value={formatCurrency(holding.totalDistributions)} />
       </dl>
+
+      <PremiumNotice holding={holding} />
 
       <details className="mt-6 group">
         <summary className="cursor-pointer text-sm font-medium text-[#0f3d3e]">
@@ -272,6 +439,14 @@ function HoldingDetail({ holding }) {
         <summary className="cursor-pointer text-sm font-medium text-[#0f3d3e]">
           Fees — AUM {formatCurrency(fees.totalAum)} / Performance {formatCurrency(fees.totalPerformance)}
         </summary>
+
+        <AumFeeDisclosure fees={fees} />
+
+        <p className="mt-3 text-[12px] leading-5 text-[#6b7280]">
+          Fees are charged at fund level and paid by the fund. The figures above
+          are your attributable share, not a separate charge to you.
+        </p>
+
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <FeeBlock title="AUM fees" total={fees.totalAum} rows={fees.aum} empty="No AUM fees yet" />
           <FeeBlock title="Performance fees" total={fees.totalPerformance} rows={fees.performance} empty="No performance fees yet" />
@@ -281,7 +456,7 @@ function HoldingDetail({ holding }) {
   );
 }
 
-function DetailField({ label, value, positive }) {
+function DetailField({ label, value, positive, hint }) {
   return (
     <div>
       <dt className="text-[11px] uppercase tracking-[0.14em] text-[#6b7280]">
@@ -298,6 +473,9 @@ function DetailField({ label, value, positive }) {
       >
         {value}
       </dd>
+      {hint ? (
+        <p className="mt-0.5 text-[11px] text-[#9ca3af]">{hint}</p>
+      ) : null}
     </div>
   );
 }
@@ -332,17 +510,25 @@ function InvestmentPage() {
   const [portfolio, setPortfolio] = useState(null);
   const [holdings, setHoldings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeFundCode, setActiveFundCode] = useState(null);
 
   useEffect(() => {
     Promise.all([fetchPortfolio(), fetchHoldings()])
       .then(([p, h]) => {
         setPortfolio(p);
         setHoldings(h);
+        setActiveFundCode((curr) => curr ?? h[0]?.fundCode ?? null);
       })
       .finally(() => setLoading(false));
   }, []);
 
-  const primaryFund = useMemo(() => holdings[0], [holdings]);
+  // The selector scopes the chart and composition below it. The totals panel
+  // stays global — Annex 3 defines "% of Total Portfolio" against all funds, so
+  // it cannot be scoped to one without changing its meaning.
+  const activeHolding = useMemo(
+    () => holdings.find((h) => h.fundCode === activeFundCode) ?? holdings[0],
+    [holdings, activeFundCode],
+  );
 
   if (loading) {
     return <p className="text-sm text-[#6b7280]">Loading portfolio…</p>;
@@ -391,15 +577,31 @@ function InvestmentPage() {
         </div>
       </section>
 
-      {primaryFund ? <PerformanceChart fundCode={primaryFund.fundCode} /> : null}
-
       <section className="space-y-4">
-        <h2 className="font-display text-[24px] leading-tight text-[#111111]">
-          Investment composition
-        </h2>
-        {holdings.map((h) => (
-          <HoldingDetail key={h.fundCode} holding={h} />
-        ))}
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h2 className="font-display text-[24px] leading-tight text-[#111111]">
+              Investment composition
+            </h2>
+            <p className="mt-1 text-sm text-[#6b7280]">
+              {holdings.length > 1
+                ? "Select a fund to see its performance and detail."
+                : "Your position in this fund."}
+            </p>
+          </div>
+          <FundSelector
+            holdings={holdings}
+            activeCode={activeHolding?.fundCode}
+            onChange={setActiveFundCode}
+          />
+        </div>
+
+        {activeHolding ? (
+          <>
+            <PerformanceChart fundCode={activeHolding.fundCode} />
+            <HoldingDetail holding={activeHolding} />
+          </>
+        ) : null}
       </section>
     </div>
   );
