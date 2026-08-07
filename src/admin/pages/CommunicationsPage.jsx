@@ -115,7 +115,7 @@ function ComposerModal({ open, initial, onClose, onSaved }) {
                 <option value="all">Everyone</option>
                 <option value="accredited">Accredited investors</option>
                 <option value="non_accredited">Non-accredited investors</option>
-                <option value="fund:apdif-1">APDIF-I holders only</option>
+                <option value="fund:aref-i">AREF I holders only</option>
               </select>
             </label>
             <label className="flex items-center gap-2 pt-6">

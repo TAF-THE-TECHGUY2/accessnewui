@@ -8,7 +8,7 @@ import { AlertTriangle, Loader2, Trash2 } from "lucide-react";
  *   open        — whether modal is visible
  *   onClose     — close callback
  *   onConfirm   — async fn(code) called when user confirms
- *   code        — the entity identifier (e.g. "inv-1019" or "apdif-1")
+ *   code        — the entity identifier (e.g. "inv-1019" or "aref-i")
  *   title       — e.g. "Delete this investor?"
  *   subtitle    — short copy explaining what gets deleted
  *   impact      — optional object {label: count, ...} to display cascade preview
