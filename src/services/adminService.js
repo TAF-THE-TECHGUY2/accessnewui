@@ -334,9 +334,12 @@ export const resetEmailTemplate = async (key) => {
 // Derived unit price and resulting unit count for a dated investment. Lets the
 // admin verify the arithmetic before committing an entry — a wrong date
 // silently produces a wrong unit count.
-export const fetchFundPricePreview = async (fundCode, { date, amount, unitPriceOverride }) => {
+export const fetchFundPricePreview = async (
+  fundCode,
+  { date, amount, units, unitPriceOverride },
+) => {
   const { data } = await api.get(`/funds/${fundCode}/price-preview`, {
-    params: { date, amount, unitPriceOverride },
+    params: { date, amount, units, unitPriceOverride },
   });
   return data;
 };

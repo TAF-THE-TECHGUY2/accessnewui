@@ -27,7 +27,11 @@ const EMPTY = {
   // Blank means "create the profile only". Supplying a date records the
   // investment immediately, priced at the book value published on that date.
   investmentDate: "",
+  // Units purchased is the authoritative input where the fund's records hold
+  // one; the price is then contribution / units. Supply either.
+  units: "",
   unitPriceOverride: "",
+  dateOaMipaSigned: "",
 };
 
 function Field({ label, name, value, onChange, type = "text", required = false, autoComplete }) {
@@ -89,16 +93,17 @@ function PricePreview({ preview, loading, error }) {
       <div className="mt-3 grid gap-3 sm:grid-cols-3">
         <div>
           <p className="text-[11px] uppercase tracking-[0.12em] text-gray-500">
-            Unit price
+            Contribution
           </p>
           <p className="mt-0.5 text-[15px] font-semibold text-ink">
-            ${preview.pricePerUnit.toFixed(4)}
+            {preview.amount != null
+              ? `$${preview.amount.toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}`
+              : "—"}
           </p>
-          <p className="mt-0.5 text-[11px] text-gray-400">
-            {preview.priceOverridden
-              ? "manual override"
-              : `${preview.quarterLabel} book value`}
-          </p>
+          <p className="mt-0.5 text-[11px] text-gray-400">as entered</p>
         </div>
         <div>
           <p className="text-[11px] uppercase tracking-[0.12em] text-gray-500">
@@ -107,34 +112,51 @@ function PricePreview({ preview, loading, error }) {
           <p className="mt-0.5 text-[15px] font-semibold text-ink">
             {preview.units != null
               ? preview.units.toLocaleString(undefined, {
-                  maximumFractionDigits: 4,
+                  maximumFractionDigits: 6,
                 })
               : "—"}
           </p>
           <p className="mt-0.5 text-[11px] text-gray-400">
-            amount ÷ unit price
+            {preview.priceSource === "derived from units"
+              ? "as entered"
+              : "contribution ÷ price"}
           </p>
         </div>
         <div>
           <p className="text-[11px] uppercase tracking-[0.12em] text-gray-500">
-            Priced from
+            Unit price
           </p>
           <p className="mt-0.5 text-[15px] font-semibold text-ink">
-            {preview.bookValueAsOf}
+            ${preview.pricePerUnit.toFixed(6)}
           </p>
           <p className="mt-0.5 text-[11px] text-gray-400">
-            ${preview.bookValue.toFixed(4)} book
-            {preview.premiumPct ? ` + ${preview.premiumPct}% premium` : ""}
+            {preview.priceSource === "derived from units"
+              ? "contribution ÷ units"
+              : preview.priceSource === "manual price"
+                ? "entered manually"
+                : `${preview.quarterLabel ?? "book"} value`}
           </p>
         </div>
       </div>
 
-      {preview.priceOverridden ? (
-        <p className="mt-3 text-[11px] leading-4 text-amber-700">
-          Overriding the published price. The premium recorded on the
-          transaction will be derived from this value, not the fund setting.
-        </p>
-      ) : null}
+      {/* Published book value shown for reference even when it did not set the
+          price, so the entry can be sanity-checked against the fund's series. */}
+      <p className="mt-3 text-[11px] leading-4 text-gray-500">
+        {preview.bookValue != null ? (
+          <>
+            Published book value on {preview.bookValueAsOf}:{" "}
+            <strong>${Number(preview.bookValue).toFixed(4)}</strong>
+            {preview.premiumPct
+              ? ` · fund premium ${preview.premiumPct}%`
+              : ""}
+          </>
+        ) : (
+          <>
+            No book value is published on or before that date — the price above
+            comes from what you entered.
+          </>
+        )}
+      </p>
     </div>
   );
 }
@@ -181,6 +203,7 @@ function CreateInvestorModal({ open, onClose, onCreated }) {
       fetchFundPricePreview(form.fundCode, {
         date: form.investmentDate,
         amount: Number(form.commitment) || undefined,
+        units: form.units ? Number(form.units) : undefined,
         unitPriceOverride: form.unitPriceOverride
           ? Number(form.unitPriceOverride)
           : undefined,
@@ -210,6 +233,7 @@ function CreateInvestorModal({ open, onClose, onCreated }) {
     form.investmentDate,
     form.fundCode,
     form.commitment,
+    form.units,
     form.unitPriceOverride,
   ]);
 
@@ -233,9 +257,11 @@ function CreateInvestorModal({ open, onClose, onCreated }) {
         // Omit rather than send empty strings — the backend treats a missing
         // date as "profile only, no position recorded".
         investmentDate: form.investmentDate || null,
+        units: form.units ? Number(form.units) : null,
         unitPriceOverride: form.unitPriceOverride
           ? Number(form.unitPriceOverride)
           : null,
+        dateOaMipaSigned: form.dateOaMipaSigned || null,
       };
       const created = await createAdminInvestor(payload);
       onCreated(created);
@@ -389,19 +415,38 @@ function CreateInvestorModal({ open, onClose, onCreated }) {
                 onChange={handleChange}
               />
               <Field
-                label="Unit price override (optional)"
+                label="Units purchased (optional)"
+                name="units"
+                type="number"
+                value={form.units}
+                onChange={handleChange}
+              />
+              <Field
+                label="Unit price (optional)"
                 name="unitPriceOverride"
                 type="number"
                 value={form.unitPriceOverride}
                 onChange={handleChange}
               />
+              <Field
+                label="OA / MIPA signed (optional)"
+                name="dateOaMipaSigned"
+                type="date"
+                value={form.dateOaMipaSigned}
+                onChange={handleChange}
+              />
             </div>
 
             <p className="mt-2 text-[11px] leading-4 text-gray-500">
-              Leave the date blank to create the profile without a position —
-              funding then happens through the normal flow. Supplying a date
-              records the investment immediately, priced at the book value
-              published on that date rather than today's.
+              Leave the investment date blank to create the profile without a
+              position. Supplying it records the investment immediately, dated
+              from the deposit — which is what every holding-period figure is
+              measured from.
+              <br />
+              Give <strong>units</strong> or a <strong>unit price</strong> and the
+              other is derived from the contribution. Units takes precedence if
+              both are entered. With neither, the price falls back to the book
+              value published on that date.
             </p>
 
             <PricePreview
