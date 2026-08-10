@@ -174,3 +174,17 @@ export const fetchCommunication = async (id) => {
   const { data } = await investorApi.get(`/portal/communications/${id}`);
   return data;
 };
+
+/**
+ * Per-investment breakdown and totals, computed to the fund manager's workbook
+ * formulas. Returns { fund, rows, totals }.
+ *
+ * Throws on 422 when the fund has no published unit value — the position genuinely
+ * cannot be valued, and the UI says so rather than showing a fabricated number.
+ */
+export const fetchBreakdown = async (fundCode) => {
+  const { data } = await investorApi.get(
+    fundCode ? `/portal/breakdown/${fundCode}` : "/portal/breakdown",
+  );
+  return data;
+};

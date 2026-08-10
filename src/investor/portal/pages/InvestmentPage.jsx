@@ -8,15 +8,21 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { ChevronDown, Info, TrendingDown, TrendingUp } from "lucide-react";
+import {
+  AlertTriangle,
+  ChevronDown,
+  Info,
+  TrendingDown,
+  TrendingUp,
+} from "lucide-react";
 
 import {
+  fetchBreakdown,
   fetchHoldingDistributions,
   fetchHoldingFees,
   fetchHoldingPerformance,
   fetchHoldingPriceHistory,
   fetchHoldings,
-  fetchPortfolio,
 } from "../../../services/investorPortalService";
 
 import StripeFundingPanel from "../../components/StripeFundingPanel";
@@ -299,6 +305,189 @@ function StatCard({ label, value, sub, trend }) {
           {sub}
         </p>
       ) : null}
+    </div>
+  );
+}
+
+
+const formatUnits = (v) =>
+  (v ?? 0).toLocaleString("en-US", { maximumFractionDigits: 6 });
+
+const formatPrice = (v) =>
+  v == null
+    ? "—"
+    : `$${(v).toLocaleString("en-US", {
+        minimumFractionDigits: 6,
+        maximumFractionDigits: 6,
+      })}`;
+
+/**
+ * Shown when the fund has no published unit value.
+ *
+ * A position cannot be valued without one, and the alternative — falling back to
+ * what the investor paid — presents cost basis as market value and reports a
+ * gain of exactly zero. That was a reported bug. Saying so plainly is the only
+ * honest option.
+ */
+function Unvalued({ message }) {
+  return (
+    <div className="rounded-[22px] border border-amber-200 bg-amber-50 p-6">
+      <div className="flex items-start gap-3">
+        <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
+        <div>
+          <h3 className="text-[15px] font-semibold text-amber-900">
+            Your position cannot be valued yet
+          </h3>
+          <p className="mt-1.5 text-[13px] leading-6 text-amber-800">
+            {message ||
+              "No unit value has been published for this fund, so current value, gain and return cannot be calculated."}
+          </p>
+          <p className="mt-2 text-[13px] leading-6 text-amber-800">
+            Your contributions and unit holdings below are unaffected. Valuation
+            figures will appear once the fund publishes a unit value.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Per-investment table. Every column is computed to the fund manager's formulas:
+ * unit price is contribution / units, holding period runs from the deposit date
+ * to the unit value's as-of date over 365.25 days, and the annualized figure is
+ * (1 + gain%)^(1/years) - 1.
+ */
+function BreakdownTable({ rows, totals }) {
+  return (
+    <div className="overflow-x-auto rounded-[16px] border border-black/10 bg-white">
+      <table className="w-full min-w-[900px] text-sm">
+        <thead className="bg-[#f5f5f5] text-[11px] uppercase tracking-[0.1em] text-[#6b7280]">
+          <tr>
+            <th className="px-4 py-3 text-left">Deposit date</th>
+            <th className="px-4 py-3 text-right">Contribution</th>
+            <th className="px-4 py-3 text-right">%</th>
+            <th className="px-4 py-3 text-right">Units</th>
+            <th className="px-4 py-3 text-right">Unit price</th>
+            <th className="px-4 py-3 text-right">Current value</th>
+            <th className="px-4 py-3 text-right">Gain / Loss</th>
+            <th className="px-4 py-3 text-right">Gain %</th>
+            <th className="px-4 py-3 text-right">Years held</th>
+            <th className="px-4 py-3 text-right">Annualized</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.transactionId} className="border-t border-black/5">
+              <td className="px-4 py-3 text-ink">
+                {r.depositDate}
+                {r.dateOaMipaSigned ? (
+                  <span className="block text-[11px] text-[#9ca3af]">
+                    signed {r.dateOaMipaSigned}
+                  </span>
+                ) : null}
+              </td>
+              <td className="px-4 py-3 text-right text-ink">
+                {formatCurrencyDetailed(r.contribution)}
+              </td>
+              <td className="px-4 py-3 text-right text-[#6b7280]">
+                {r.contributionPct.toFixed(2)}%
+              </td>
+              <td className="px-4 py-3 text-right text-ink">
+                {formatUnits(r.units)}
+              </td>
+              <td className="px-4 py-3 text-right text-ink">
+                {formatPrice(r.unitPrice)}
+              </td>
+              <td className="px-4 py-3 text-right text-ink">
+                {formatCurrencyDetailed(r.unitsValue)}
+              </td>
+              <td
+                className={`px-4 py-3 text-right font-medium ${
+                  r.gain >= 0 ? "text-emerald-700" : "text-red-700"
+                }`}
+              >
+                {formatCurrencyDetailed(r.gain)}
+              </td>
+              <td
+                className={`px-4 py-3 text-right ${
+                  r.gainPct >= 0 ? "text-emerald-700" : "text-red-700"
+                }`}
+              >
+                {formatPercent(r.gainPct)}
+              </td>
+              <td className="px-4 py-3 text-right text-[#6b7280]">
+                {r.holdingYears.toFixed(4)}
+              </td>
+              <td
+                className={`px-4 py-3 text-right ${
+                  r.annualizedReturnPct >= 0
+                    ? "text-emerald-700"
+                    : "text-red-700"
+                }`}
+              >
+                {formatPercent(r.annualizedReturnPct)}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+        <tfoot className="border-t-2 border-black/10 bg-[#fafafa] font-semibold">
+          <tr>
+            <td className="px-4 py-3 text-ink">
+              Total
+              <span className="block text-[11px] font-normal text-[#9ca3af]">
+                {totals.investmentCount} investment
+                {totals.investmentCount === 1 ? "" : "s"}
+              </span>
+            </td>
+            <td className="px-4 py-3 text-right text-ink">
+              {formatCurrencyDetailed(totals.contribution)}
+            </td>
+            <td className="px-4 py-3 text-right text-[#6b7280]">100.00%</td>
+            <td className="px-4 py-3 text-right text-ink">
+              {formatUnits(totals.units)}
+            </td>
+            <td className="px-4 py-3 text-right text-ink">
+              {formatPrice(totals.weightedAverageUnitPrice)}
+              <span className="block text-[11px] font-normal text-[#9ca3af]">
+                weighted avg
+              </span>
+            </td>
+            <td className="px-4 py-3 text-right text-ink">
+              {formatCurrencyDetailed(totals.unitsValue)}
+            </td>
+            <td
+              className={`px-4 py-3 text-right ${
+                totals.gain >= 0 ? "text-emerald-700" : "text-red-700"
+              }`}
+            >
+              {formatCurrencyDetailed(totals.gain)}
+            </td>
+            <td
+              className={`px-4 py-3 text-right ${
+                totals.gainPct >= 0 ? "text-emerald-700" : "text-red-700"
+              }`}
+            >
+              {formatPercent(totals.gainPct)}
+            </td>
+            <td className="px-4 py-3 text-right text-[#6b7280]">
+              {totals.weightedAverageHoldingPeriodYears.toFixed(4)}
+              <span className="block text-[11px] font-normal text-[#9ca3af]">
+                units-weighted
+              </span>
+            </td>
+            <td
+              className={`px-4 py-3 text-right ${
+                totals.annualizedReturnPct >= 0
+                  ? "text-emerald-700"
+                  : "text-red-700"
+              }`}
+            >
+              {formatPercent(totals.annualizedReturnPct)}
+            </td>
+          </tr>
+        </tfoot>
+      </table>
     </div>
   );
 }
@@ -588,14 +777,39 @@ function FeeBlock({ title, total, rows, empty }) {
 }
 
 function InvestmentPage() {
-  const [portfolio, setPortfolio] = useState(null);
+  const [breakdown, setBreakdown] = useState(null);
+  const [unvaluedMessage, setUnvaluedMessage] = useState(null);
   const [holdings, setHoldings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeFundCode, setActiveFundCode] = useState(null);
 
-  const load = () =>
-    Promise.all([fetchPortfolio(), fetchHoldings()]).then(([p, h]) => {
-      setPortfolio(p);
+  // Every displayed figure comes from /portal/breakdown, which computes to the
+  // fund manager's formulas. holdings() is still fetched, but only for the fund
+  // selector and the per-fund detail panels — never for the headline numbers,
+  // which used different math and were reported as wrong.
+  const load = (fundCode) =>
+    Promise.all([
+      fetchBreakdown(fundCode).then(
+        (b) => {
+          setUnvaluedMessage(null);
+          return b;
+        },
+        (err) => {
+          // 422 means the fund has no published unit value. That is a real
+          // state, not a failure — surface it instead of rendering zeros.
+          if (err?.response?.status === 422) {
+            setUnvaluedMessage(
+              err.response.data?.message ||
+                "This fund has no published unit value.",
+            );
+            return null;
+          }
+          throw err;
+        },
+      ),
+      fetchHoldings(),
+    ]).then(([b, h]) => {
+      setBreakdown(b);
       setHoldings(h);
       setActiveFundCode((curr) => curr ?? h[0]?.fundCode ?? null);
     });
@@ -616,7 +830,7 @@ function InvestmentPage() {
     return <p className="text-sm text-[#6b7280]">Loading portfolio…</p>;
   }
 
-  if (!portfolio || holdings.length === 0) {
+  if (holdings.length === 0) {
     return (
       <div className="rounded-[22px] border border-dashed border-black/15 bg-white/60 p-12 text-center">
         <p className="text-sm text-[#6b7280]">
@@ -628,42 +842,77 @@ function InvestmentPage() {
 
   return (
     <div className="space-y-6">
-      <section>
-        <h2 className="font-display text-[24px] leading-tight text-[#111111]">
-          Total investment
-        </h2>
-        <p className="mt-1 text-sm text-[#6b7280]">
-          Across all funds you have a position in.
-        </p>
+      {unvaluedMessage ? <Unvalued message={unvaluedMessage} /> : null}
 
-        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard label="Total invested" value={formatCurrency(portfolio.totalInvested)} />
-          <StatCard
-            label="Current value"
-            value={formatCurrency(portfolio.totalCurrentValue)}
-            sub={formatPercent(portfolio.totalGainLossPct)}
-            trend={portfolio.totalGainLossPct}
+      {breakdown ? (
+        <section>
+          <h2 className="font-display text-[24px] leading-tight text-[#111111]">
+            Total investment
+          </h2>
+          <p className="mt-1 text-sm text-[#6b7280]">
+            Valued at {formatPrice(breakdown.totals.unitValue)} per unit as of{" "}
+            {breakdown.totals.unitValueAsOf}. All figures are measured to that
+            date.
+          </p>
+
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StatCard
+              label="Total invested"
+              value={formatCurrencyDetailed(breakdown.totals.contribution)}
+              sub={`${formatUnits(breakdown.totals.units)} units`}
+              trend={0}
+            />
+            <StatCard
+              label="Current value"
+              value={formatCurrencyDetailed(breakdown.totals.unitsValue)}
+              sub={formatPercent(breakdown.totals.gainPct)}
+              trend={breakdown.totals.gainPct}
+            />
+            <StatCard
+              label="Gain / Loss"
+              value={formatCurrencyDetailed(breakdown.totals.gain)}
+              sub="vs. invested"
+              trend={breakdown.totals.gain}
+            />
+            <StatCard
+              label="Annualized return"
+              value={formatPercent(breakdown.totals.annualizedReturnPct)}
+              sub={`over ${breakdown.totals.weightedAverageHoldingPeriodYears.toFixed(2)} yrs held`}
+              trend={breakdown.totals.annualizedReturnPct}
+            />
+          </div>
+        </section>
+      ) : null}
+
+      {breakdown && breakdown.rows.length > 0 ? (
+        <section className="space-y-3">
+          <div>
+            <h2 className="font-display text-[24px] leading-tight text-[#111111]">
+              Your investments
+            </h2>
+            <p className="mt-1 text-sm text-[#6b7280]">
+              Each contribution, the units it bought, and how it has performed
+              since the deposit date.
+            </p>
+          </div>
+          <BreakdownTable
+            rows={breakdown.rows}
+            totals={breakdown.totals}
           />
-          <StatCard
-            label="Gain / Loss"
-            value={formatCurrency(portfolio.totalGainLoss)}
-            sub={`vs. invested`}
-            trend={portfolio.totalGainLoss}
-          />
-          <StatCard
-            label="Total return"
-            value={formatPercent(portfolio.totalReturnPct)}
-            sub={`incl. ${formatCurrency(portfolio.totalDistributions)} distributions`}
-            trend={portfolio.totalReturnPct}
-          />
-        </div>
-      </section>
+          <p className="text-[12px] leading-5 text-[#6b7280]">
+            Unit price is your contribution divided by the units it purchased.
+            Holding periods run from the deposit date to{" "}
+            {breakdown.totals.unitValueAsOf} using a 365.25-day year. The
+            weighted average holding period is weighted by units held.
+          </p>
+        </section>
+      ) : null}
 
       <section className="space-y-4">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <h2 className="font-display text-[24px] leading-tight text-[#111111]">
-              Investment composition
+              Fund detail
             </h2>
             <p className="mt-1 text-sm text-[#6b7280]">
               {holdings.length > 1
