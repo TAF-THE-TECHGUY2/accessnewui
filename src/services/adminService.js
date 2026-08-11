@@ -343,3 +343,15 @@ export const fetchFundPricePreview = async (
   });
   return data;
 };
+
+/**
+ * Record an investment against an existing investor.
+ *
+ * Supply units or unitPrice — the other is derived from the amount. Rejects an
+ * identical amount on the same date with 409 unless allowDuplicate is set, since
+ * that is nearly always a repeated submit.
+ */
+export const recordInvestorInvestment = async (investorCode, payload) => {
+  const { data } = await api.post(`/investors/${investorCode}/investments`, payload);
+  return data.data;
+};

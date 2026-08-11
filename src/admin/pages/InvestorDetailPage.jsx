@@ -24,6 +24,7 @@ import InvestorProcessingPanel from "../components/InvestorProcessingPanel";
 import InvestReadyPanel from "../components/InvestReadyPanel";
 import InvestorAgreements from "../components/InvestorAgreements";
 import AdminOverridePanel from "../components/AdminOverridePanel";
+import RecordInvestmentPanel from "../components/RecordInvestmentPanel";
 import {
   deleteInvestor,
   getInvestorById,
@@ -435,6 +436,10 @@ function InvestorDetailPage() {
                 dashboardStatus: updated.dashboardStatus,
               });
             }}
+          />
+          <RecordInvestmentPanel
+            investor={investor}
+            onInvestorUpdated={(updated) => setInvestor(updated)}
           />
           <AdminOverridePanel
             investor={investor}
