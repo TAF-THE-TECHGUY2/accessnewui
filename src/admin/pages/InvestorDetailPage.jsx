@@ -437,10 +437,6 @@ function InvestorDetailPage() {
               });
             }}
           />
-          <RecordInvestmentPanel
-            investor={investor}
-            onInvestorUpdated={(updated) => setInvestor(updated)}
-          />
           <AdminOverridePanel
             investor={investor}
             onInvestorUpdated={(updated) => {
@@ -481,6 +477,11 @@ function InvestorDetailPage() {
 
       {/* Investments */}
       {activeTab === "Investments" ? (
+        <div className="flex flex-col gap-6">
+        <RecordInvestmentPanel
+          investor={investor}
+          onInvestorUpdated={(updated) => setInvestor(updated)}
+        />
         <section className="rounded-[22px] border border-black/5 bg-white p-6 shadow-[0_10px_30px_rgba(15,61,62,0.06)]">
           <div className="grid gap-4 md:grid-cols-3">
             <div className="rounded-[20px] bg-[#faf7f2] p-5">
@@ -505,6 +506,7 @@ function InvestorDetailPage() {
             </div>
           </div>
         </section>
+        </div>
       ) : null}
 
       {/* Activity */}
