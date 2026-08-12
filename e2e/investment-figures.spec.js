@@ -12,17 +12,30 @@ import { expect, test } from "@playwright/test";
  * skipping the form. A wrong unit count is invisible in the API response if the
  * form sent the wrong thing in the first place.
  *
- * Configure with env vars — defaults target production:
- *   E2E_BASE_URL        https://investor.ap.boston
+ * Configure with env vars — defaults target a local dev server:
+ *   E2E_BASE_URL        http://localhost:3002
  *   E2E_ADMIN_EMAIL     admin@accessproperties.test
  *   E2E_ADMIN_PASSWORD  password
  *   E2E_FUND_NAME       Access Real Estate Fund I
+ *   E2E_ALLOW_REMOTE    required to point at anything but localhost
  */
 
-const BASE = process.env.E2E_BASE_URL ?? "https://investor.ap.boston";
+const BASE = process.env.E2E_BASE_URL ?? "http://localhost:3002";
 const ADMIN_EMAIL = process.env.E2E_ADMIN_EMAIL ?? "admin@accessproperties.test";
 const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD ?? "password";
 const FUND_NAME = process.env.E2E_FUND_NAME ?? "Access Real Estate Fund I";
+
+// This test creates a real investor with a real fund position. Against a live
+// environment that is a row someone has to go and delete, so pointing at one is
+// a decision that has to be stated, not something a bare `npx playwright test`
+// can do by accident.
+if (!/^https?:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/.test(BASE) && !process.env.E2E_ALLOW_REMOTE) {
+  throw new Error(
+    `Refusing to run against ${BASE} — this test creates a real investor.\n` +
+      `Set E2E_ALLOW_REMOTE=1 to confirm, and clean up afterwards with the\n` +
+      `investors:clear command printed at the end of the run.`,
+  );
+}
 
 // Unique per run so a rerun never collides with, or silently reuses, an earlier
 // investor — and so cleanup can target exactly this run.
@@ -271,7 +284,8 @@ test.describe("Investment figures, end to end through the UI", () => {
   test.afterAll(async () => {
     if (investorCode) {
       console.log(
-        `\n  Created ${investorCode} (${INVESTOR_EMAIL}). Remove it with:\n` +
+        `\n  Created ${investorCode} (${INVESTOR_EMAIL}) on ${BASE}.\n` +
+          `  Remove it from that environment's backend with:\n` +
           `    php artisan investors:clear --code=${investorCode} --force\n`,
       );
     }

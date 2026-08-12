@@ -12,7 +12,7 @@ export default defineConfig({
   expect: { timeout: 20_000 },
   reporter: [["list"], ["html", { open: "never" }]],
   use: {
-    baseURL: process.env.E2E_BASE_URL ?? "https://investor.ap.boston",
+    baseURL: process.env.E2E_BASE_URL ?? "http://localhost:3002",
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
     video: "off",
