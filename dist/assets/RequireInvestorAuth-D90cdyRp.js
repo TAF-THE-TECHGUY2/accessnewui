@@ -1,1 +1,0 @@
-import{t as e}from"./jsx-runtime-dBoqvwbd.js";import{a as t,i as n,r}from"./index-DG7A6Ce7.js";import{t as i}from"./investorApi-Nd69c7Fn.js";var a=e();function o(){let e=t();return i()?(0,a.jsx)(n,{}):(0,a.jsx)(r,{to:`/login`,replace:!0,state:{from:e}})}export{o as default};

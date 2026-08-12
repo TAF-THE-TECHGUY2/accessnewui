@@ -146,7 +146,32 @@ const formatDate = (iso) =>
  * Both figures are shown so the two reconcile.
  */
 function PremiumNotice({ holding }) {
-  const premiumPaid = holding.premiumPaid ?? 0;
+  // null is not zero. The API sends null when any deposit has no published book
+  // value to compare against, and treating that as 0 is what fabricated a
+  // "$7.90 book value plus a 26.8% entry premium" against a real $10.01 entry.
+  if (holding.premiumPaid == null || holding.entryBookValue == null) {
+    return (
+      <div className="mt-5 flex items-start gap-3 rounded-[14px] border border-black/10 bg-[#f7f5f1] p-4">
+        <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#6b7280]" />
+        <div className="text-[13px] leading-6 text-[#1f2937]">
+          <p>
+            You entered at{" "}
+            <strong>
+              ${holding.entryPrice != null ? holding.entryPrice.toFixed(4) : "—"}
+            </strong>{" "}
+            per unit.
+          </p>
+          <p className="mt-1.5 text-[#4b5563]">
+            One or more of your deposits has no published book value for its
+            date, so there is no book value to compare that entry price against.
+            Your units, contributions and current value above are unaffected.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const premiumPaid = holding.premiumPaid;
 
   if (premiumPaid <= 0) {
     return null;
@@ -171,8 +196,7 @@ function PremiumNotice({ holding }) {
         <p>
           You entered at{" "}
           <strong>${(holding.entryPrice ?? 0).toFixed(2)}</strong> per unit — the{" "}
-          <strong>${(holding.entryBookValue ?? 0).toFixed(2)}</strong> book value
-          plus a{" "}
+          <strong>${holding.entryBookValue.toFixed(2)}</strong> book value plus a{" "}
           <strong>{(holding.premiumPct ?? 0).toFixed(1)}% entry premium</strong>{" "}
           of {formatCurrencyDetailed(premiumPaid)}.
         </p>
@@ -629,28 +653,33 @@ function HoldingDetail({ holding }) {
         </div>
       </div>
 
+      {/* Only what the breakdown table above does not already carry. Every
+          figure duplicated here previously came from the older per-holding math
+          and disagreed with it — the same position showed +8.94% in the table
+          and +8.27% here. One number per question. */}
       <dl className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        <DetailField label="Amount invested" value={formatCurrency(holding.amountInvested)} />
         <DetailField
-          label="Entry price"
-          value={holding.entryPrice != null ? `$${holding.entryPrice.toFixed(4)}` : "—"}
+          label="Current unit price"
+          value={`$${holding.currentUnitPrice.toFixed(4)}`}
+          hint="published book value"
+        />
+        <DetailField
+          label="Units held"
+          value={holding.totalUnits.toLocaleString("en-US", { maximumFractionDigits: 6 })}
+        />
+        <DetailField
+          label="Total distributions"
+          value={formatCurrency(holding.totalDistributions)}
+        />
+        <DetailField
+          label="First invested"
+          value={formatDate(holding.firstTransactionDate)}
           hint={
             holding.transactionCount > 1
-              ? `weighted across ${holding.transactionCount} purchases`
-              : formatDate(holding.firstTransactionDate)
+              ? `${holding.transactionCount} investments`
+              : undefined
           }
         />
-        <DetailField label="Current unit price" value={`$${holding.currentUnitPrice.toFixed(4)}`} hint="book value" />
-        <DetailField label="Total units held" value={holding.totalUnits.toFixed(2)} />
-        <DetailField label="Current value" value={formatCurrency(holding.currentValue)} />
-        <DetailField
-          label="Gain / Loss"
-          value={`${formatCurrency(holding.gainLoss)} (${formatPercent(holding.gainLossPct)})`}
-          positive={holding.gainLoss >= 0}
-        />
-        <DetailField label="Total return" value={formatPercent(holding.totalReturnPct)} positive={holding.totalReturnPct >= 0} />
-        <DetailField label="Annualized return" value={formatPercent(holding.annualizedReturnPct)} positive={holding.annualizedReturnPct >= 0} />
-        <DetailField label="Total distributions" value={formatCurrency(holding.totalDistributions)} />
       </dl>
 
       <PremiumNotice holding={holding} />
