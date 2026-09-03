@@ -226,7 +226,7 @@ test.describe("Investment figures, end to end through the UI", () => {
     });
   });
 
-  test("the portal shows every figure from the workbook", async ({ page }) => {
+  test("the portal overview shows the portfolio snapshot", async ({ page }) => {
     await page.goto(`${BASE}/login`);
     await page.getByPlaceholder("name@email.com").fill(INVESTOR_EMAIL);
     await page.locator('input[type="password"]').fill(INVESTOR_PASSWORD);
@@ -244,7 +244,37 @@ test.describe("Investment figures, end to end through the UI", () => {
 
     const body = page.locator("body");
 
-    // Headline totals.
+    // Portfolio Snapshot. The per-investment figures moved to the fund detail
+    // route in the UI redesign; the expected values did not change.
+    await expect(body).toContainText(TOTALS.contribution, { timeout: 20000 });
+    await expect(body).toContainText(TOTALS.unitsValue);
+    await expect(body).toContainText(TOTALS.gain);
+    await expect(body).toContainText(TOTALS.gainPct);
+    await expect(body).toContainText(TOTALS.units);
+
+    // Never show cost basis as market value — a reported defect.
+    await expect(body).not.toContainText("+0.00%");
+
+    await page.screenshot({
+      path: `test-results/04-portal-overview-${RUN}.png`,
+      fullPage: true,
+    });
+  });
+
+  test("the fund detail page shows every figure from the workbook", async ({ page }) => {
+    await page.goto(`${BASE}/login`);
+    await page.getByPlaceholder("name@email.com").fill(INVESTOR_EMAIL);
+    await page.locator('input[type="password"]').fill(INVESTOR_PASSWORD);
+    await page.getByRole("button", { name: /sign in/i }).click();
+    await page.waitForURL(/\/dashboard/, { timeout: 20000 });
+
+    // Reached the way an investor reaches it, not by typing the URL — the link
+    // carrying the right fund code is part of what is under test.
+    await page.getByRole("link", { name: /view details/i }).first().click();
+    await page.waitForURL(/\/dashboard\/funds\//, { timeout: 20000 });
+
+    const body = page.locator("body");
+
     await expect(body).toContainText(TOTALS.contribution, { timeout: 20000 });
     await expect(body).toContainText(TOTALS.unitsValue);
     await expect(body).toContainText(TOTALS.gain);
@@ -256,13 +286,13 @@ test.describe("Investment figures, end to end through the UI", () => {
       await expect(body).toContainText(inv.expect.unitPrice);
       await expect(body).toContainText(inv.expect.unitsValue);
       await expect(body).toContainText(inv.expect.gain);
+      await expect(body).toContainText(inv.expect.years);
     }
 
     // The weighted average that deliberately differs from his sheet.
     await expect(body).toContainText(TOTALS.weightedAverageUnitPrice);
     await expect(body).toContainText(TOTALS.wahp);
 
-    // Never show cost basis as market value — a reported defect.
     await expect(body).not.toContainText("+0.00%");
 
     // Never invent a premium. Where any deposit predates the published price
@@ -276,7 +306,7 @@ test.describe("Investment figures, end to end through the UI", () => {
     await expect(body).not.toContainText("+8.27%");
 
     await page.screenshot({
-      path: `test-results/04-portal-investment-tab-${RUN}.png`,
+      path: `test-results/05-portal-fund-detail-${RUN}.png`,
       fullPage: true,
     });
   });

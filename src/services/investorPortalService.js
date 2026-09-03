@@ -165,6 +165,34 @@ export const downloadPortalDocument = async (document) => {
   window.URL.revokeObjectURL(blobUrl);
 };
 
+/**
+ * Opens a document in a new tab instead of saving it.
+ *
+ * Uses the same authorised /download response — the endpoint streams the file
+ * and the browser decides what to do with the blob, so previewing needs no
+ * second route and no public URL. The object URL is revoked on a timer rather
+ * than immediately: revoking it before the new tab has read it leaves a blank
+ * viewer.
+ */
+export const openPortalDocument = async (document) => {
+  const response = await investorApi.get(
+    `/portal/documents/${document.id}/download`,
+    { responseType: "blob" }
+  );
+  const blob = new Blob([response.data], {
+    type: response.data.type || "application/pdf",
+  });
+  const blobUrl = window.URL.createObjectURL(blob);
+  const opened = window.open(blobUrl, "_blank", "noopener,noreferrer");
+
+  if (!opened) {
+    window.URL.revokeObjectURL(blobUrl);
+    throw new Error("Your browser blocked the preview window.");
+  }
+
+  window.setTimeout(() => window.URL.revokeObjectURL(blobUrl), 60_000);
+};
+
 export const fetchCommunications = async () => {
   const { data } = await investorApi.get("/portal/communications");
   return data.data;
@@ -182,6 +210,20 @@ export const fetchCommunication = async (id) => {
  * Throws on 422 when the fund has no published unit value — the position genuinely
  * cannot be valued, and the UI says so rather than showing a fabricated number.
  */
+/** Password change for a signed-in investor. Requires the current password. */
+export const changePortalPassword = async ({
+  currentPassword,
+  password,
+  passwordConfirmation,
+}) => {
+  const { data } = await investorApi.post("/portal/password", {
+    currentPassword,
+    password,
+    password_confirmation: passwordConfirmation,
+  });
+  return data;
+};
+
 export const fetchBreakdown = async (fundCode) => {
   const { data } = await investorApi.get(
     fundCode ? `/portal/breakdown/${fundCode}` : "/portal/breakdown",

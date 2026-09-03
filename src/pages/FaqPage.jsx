@@ -53,7 +53,16 @@ const getIcon = (name) => {
   return iconMap[match] || Lightbulb;
 };
 
-export default function FaqPage() {
+/**
+ * The FAQ, served both as a public page at /faq and inside the investor portal
+ * at /dashboard/faq.
+ *
+ * `embedded` drops the chrome the standalone page needs and the portal already
+ * provides: its own full-height white ground, the back-to-onboarding link, and
+ * the sticky category nav's top offset, which would otherwise stick underneath
+ * the portal's top bar instead of below it.
+ */
+export default function FaqPage({ embedded = false }) {
   const [items, setItems] = useState(faqItems);
   const [config, setConfig] = useState(faqConfig);
   const [openId, setOpenId] = useState(null);
@@ -99,20 +108,26 @@ export default function FaqPage() {
   }));
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className={embedded ? "" : "min-h-screen bg-white"}>
       {/* Back link */}
-      <div className="mx-auto max-w-6xl px-4 pt-8 md:px-8 lg:px-16">
-        <Link
-          to="/"
-          className="inline-flex h-10 items-center gap-2 text-[14px] font-medium text-gray-500 transition hover:text-gray-900"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to onboarding
-        </Link>
-      </div>
+      {embedded ? null : (
+        <div className="mx-auto max-w-6xl px-4 pt-8 md:px-8 lg:px-16">
+          <Link
+            to="/"
+            className="inline-flex h-10 items-center gap-2 text-[14px] font-medium text-gray-500 transition hover:text-gray-900"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to onboarding
+          </Link>
+        </div>
+      )}
 
       {/* Page title */}
-      <div className="mx-auto max-w-6xl px-4 pt-6 md:px-8 lg:px-16">
+      <div
+        className={`mx-auto max-w-6xl ${
+          embedded ? "px-0" : "px-4 pt-6 md:px-8 lg:px-16"
+        }`}
+      >
         <h1 className="text-3xl font-semibold text-gray-900 md:text-4xl">
           {config.heroTitle || "Frequently Asked Questions"}
         </h1>
@@ -124,8 +139,8 @@ export default function FaqPage() {
       </div>
 
       {/* Sticky category nav */}
-      <div className="sticky top-0 z-40 mt-8 border-b border-gray-200 bg-white shadow-sm">
-        <div className="mx-auto max-w-6xl px-5 py-4 pt-6 md:px-8 lg:px-16">
+      <div className={`z-40 mt-8 ${embedded ? "" : "sticky top-0 border-b border-gray-200 bg-white shadow-sm"}`}>
+        <div className={`mx-auto max-w-6xl md:px-8 lg:px-16 ${embedded ? "px-0 py-0" : "px-5 py-4 pt-6"}`}>
           <div className="flex flex-wrap justify-center gap-3">
             {categories.map((cat) => {
               const Icon = getIcon(cat.iconName);
@@ -146,7 +161,7 @@ export default function FaqPage() {
       </div>
 
       {/* Category sections */}
-      <div className="mx-auto max-w-6xl px-4 py-16 md:px-8 lg:px-16">
+      <div className={`mx-auto max-w-6xl md:px-8 lg:px-16 ${embedded ? "px-0 py-0" : "px-4 py-16"}`}>
         {grouped.map((cat) => {
           const Icon = getIcon(cat.iconName);
           const selected = cat.items.find((item) => item._id === openId);
@@ -154,7 +169,7 @@ export default function FaqPage() {
             <section
               key={cat.key}
               ref={setSectionRef(cat.key)}
-              className="scroll-mt-40 pt-20"
+              className={embedded ? "scroll-mt-6 pt-10" : "scroll-mt-40 pt-20"}
             >
               <div className="mb-2 flex items-center gap-3">
                 <Icon className="h-6 w-6 text-gray-900" />

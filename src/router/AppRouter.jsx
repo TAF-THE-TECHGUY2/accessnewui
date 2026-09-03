@@ -27,6 +27,7 @@ const PortalInvestmentPage = lazy(() => import("../investor/portal/pages/Investm
 const PortalProfilePage = lazy(() => import("../investor/portal/pages/ProfilePage"));
 const PortalDocumentsPage = lazy(() => import("../investor/portal/pages/DocumentsPage"));
 const PortalCommunicationsPage = lazy(() => import("../investor/portal/pages/CommunicationsPage"));
+const PortalFundDetailPage = lazy(() => import("../investor/portal/pages/FundDetailPage"));
 
 function AppRouter() {
   return (
@@ -50,6 +51,10 @@ function AppRouter() {
             <Route path="profile" element={<PortalProfilePage />} />
             <Route path="documents" element={<PortalDocumentsPage />} />
             <Route path="communications" element={<PortalCommunicationsPage />} />
+            <Route path="funds/:code" element={<PortalFundDetailPage />} />
+            {/* The same component as the public /faq, with its standalone
+                chrome suppressed — the portal supplies its own. */}
+            <Route path="faq" element={<FaqPage embedded />} />
           </Route>
           <Route path="/oauth/investready/callback" element={<InvestReadyCallbackPage />} />
         </Route>
