@@ -789,10 +789,30 @@ function FundDetailPage() {
             <h3 className="font-display text-[20px] leading-tight text-[#111111]">
               Fees
             </h3>
-            <p className="mt-2 text-[12px] leading-5 text-[#6b7280]">
-              Fees are charged at fund level and paid by the fund. The figures
-              below are your attributable share, not a separate charge to you.
-            </p>
+
+            {/* The fund publishes a unit price already net of all fund expenses
+                and fees, so the returns above are net too. Saying so is not
+                decoration: without it these figures read as a charge still to
+                come, and an investor subtracting them again would understate
+                their own position. */}
+            <div className="mt-3 flex items-start gap-3 rounded-[14px] border border-black/10 bg-[#f7f5f1] p-4">
+              <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#6b7280]" />
+              <div className="text-[13px] leading-6 text-[#1f2937]">
+                <p>
+                  <strong>These figures are for transparency only.</strong> Fees
+                  are charged at fund level and paid by the fund.
+                </p>
+                {fees.alreadyNetOfFees ? (
+                  <p className="mt-1.5 text-[#4b5563]">
+                    The unit price your position is valued at is already net of
+                    all fund expenses and fees, so your returns above are also
+                    net. Do not subtract the amounts below again — they are
+                    already reflected.
+                  </p>
+                ) : null}
+              </div>
+            </div>
+
             <dl className="mt-4 grid gap-5 sm:grid-cols-3">
               <Field
                 label="Rate"
@@ -801,26 +821,32 @@ function FundDetailPage() {
                     ? `${fees.aumRatePct.toFixed(2)}% per year`
                     : "—"
                 }
-                hint="charged quarterly"
+                hint="of gross asset value, charged quarterly"
               />
               <Field
-                label="AUM to date"
+                label="Your AUM fees to date"
                 value={formatCurrencyDetailed(fees.totalAum)}
                 hint={`${fees.aum?.length ?? 0} period${(fees.aum?.length ?? 0) === 1 ? "" : "s"}`}
               />
               <Field
-                label="Performance to date"
+                label="Your performance fees to date"
                 value={formatCurrencyDetailed(fees.totalPerformance)}
               />
             </dl>
+
+            {/* Each period shows the fund's total and the share it was split
+                by, so the investor's own figure can be checked rather than
+                taken on trust. */}
             <div className="mt-4">
               <MiniTable
-                head={["Period", "Amount"]}
+                head={["Period", "Fund total", "Your share", "Your fee"]}
                 rows={(fees.aum || []).map((r) => [
                   `${r.periodStart} → ${r.periodEnd}`,
+                  r.fundTotal != null ? formatCurrencyDetailed(r.fundTotal) : "—",
+                  r.ownershipPct != null ? `${r.ownershipPct.toFixed(3)}%` : "—",
                   formatCurrencyDetailed(r.amount),
                 ])}
-                empty="No AUM fees have been charged yet."
+                empty="No AUM fees have been allocated yet."
               />
             </div>
           </>

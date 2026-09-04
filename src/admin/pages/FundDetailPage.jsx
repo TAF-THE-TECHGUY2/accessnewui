@@ -264,85 +264,174 @@ function FundProfileForm({ fund, onSaved }) {
   );
 }
 
+/**
+ * Records the quarterly fee the accountant has already calculated.
+ *
+ * The website does not compute this figure — the accountant does, from the
+ * fund's gross asset value after quarter end. This form takes that total and
+ * the website divides it pro rata among investors by their ownership during the
+ * quarter, so the sum of what investors see always equals the number in the
+ * books. Re-submitting the same quarter corrects it rather than charging twice.
+ */
 function DeclareFeeForm({ fundCode, onDeclared }) {
   const [form, setForm] = useState({
     feeType: "aum",
-    rate: "0.0150",
+    totalAmount: "",
+    grossAssetValue: "",
     periodStart: "",
     periodEnd: "",
     description: "",
   });
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState(null);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState(null);
+
+  const change = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+
+  // Shown as a check on the entered total, never sent — the accountant's figure
+  // is authoritative and the website must not override it.
+  const implied = Number(form.grossAssetValue) > 0
+    ? (Number(form.grossAssetValue) * 0.01) / 4
+    : null;
+  const entered = Number(form.totalAmount);
+  const divergent =
+    implied != null && entered > 0 && Math.abs(implied - entered) > 0.01;
 
   const submit = async (e) => {
     e.preventDefault();
     setBusy(true);
-    setMessage(null);
+    setResult(null);
+    setError(null);
     try {
       const res = await declareFundFee(fundCode, {
         feeType: form.feeType,
-        rate: Number(form.rate),
+        totalAmount: Number(form.totalAmount),
+        grossAssetValue: form.grossAssetValue ? Number(form.grossAssetValue) : undefined,
         periodStart: form.periodStart,
         periodEnd: form.periodEnd,
         description: form.description || undefined,
       });
-      setMessage(res.message);
+      setResult(res);
       onDeclared();
     } catch (err) {
-      setMessage(err?.response?.data?.message || "Could not declare fee.");
+      const fieldError = err?.response?.data?.errors
+        ? Object.values(err.response.data.errors).flat()[0]
+        : null;
+      setError(fieldError || err?.response?.data?.message || "Could not record the fee.");
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <form onSubmit={submit} className="grid gap-2 sm:grid-cols-[1fr_1fr_1fr_1fr_auto]">
-      <select
-        value={form.feeType}
-        onChange={(e) => setForm({ ...form, feeType: e.target.value })}
-        className="h-10 rounded-[10px] border border-black/10 px-3 text-sm"
-      >
-        <option value="aum">AUM fee</option>
-        <option value="performance">Performance fee</option>
-      </select>
-      <input
-        required
-        type="number"
-        step="0.0001"
-        min="0"
-        max="1"
-        placeholder="Rate (0.015 = 1.5%)"
-        value={form.rate}
-        onChange={(e) => setForm({ ...form, rate: e.target.value })}
-        className="h-10 rounded-[10px] border border-black/10 px-3 text-sm"
-      />
-      <input
-        required
-        type="date"
-        value={form.periodStart}
-        onChange={(e) => setForm({ ...form, periodStart: e.target.value })}
-        className="h-10 rounded-[10px] border border-black/10 px-3 text-sm"
-      />
-      <input
-        required
-        type="date"
-        value={form.periodEnd}
-        onChange={(e) => setForm({ ...form, periodEnd: e.target.value })}
-        className="h-10 rounded-[10px] border border-black/10 px-3 text-sm"
-      />
-      <button
-        type="submit"
-        disabled={busy}
-        className="h-10 rounded-[10px] bg-black px-4 text-sm font-medium text-white disabled:opacity-60"
-      >
-        {busy ? "…" : "Declare"}
-      </button>
-      {message ? (
-        <p className="sm:col-span-5 rounded-[10px] bg-emerald-50 px-3 py-1.5 text-xs text-emerald-700">
-          {message}
+    <form onSubmit={submit} className="space-y-4">
+      <p className="text-sm text-gray-600">
+        Enter the quarterly fee your accountant calculated. It will be split
+        among investors by their ownership of the fund during the period —
+        nothing is recalculated here.
+      </p>
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <label className="block">
+          <span className="text-[11px] uppercase tracking-[0.14em] text-gray-500">Fee type</span>
+          <select
+            name="feeType"
+            value={form.feeType}
+            onChange={change}
+            className="mt-1 h-10 w-full rounded-[10px] border border-black/10 px-3 text-sm"
+          >
+            <option value="aum">AUM fee</option>
+            <option value="performance">Performance fee</option>
+          </select>
+        </label>
+        <label className="block">
+          <span className="text-[11px] uppercase tracking-[0.14em] text-gray-500">
+            Quarterly fee ($)
+          </span>
+          <input
+            required
+            name="totalAmount"
+            type="number"
+            step="0.01"
+            min="0"
+            placeholder="3587.50"
+            value={form.totalAmount}
+            onChange={change}
+            className="mt-1 h-10 w-full rounded-[10px] border border-black/10 px-3 text-sm"
+          />
+        </label>
+        <label className="block">
+          <span className="text-[11px] uppercase tracking-[0.14em] text-gray-500">
+            Gross asset value ($)
+          </span>
+          <input
+            name="grossAssetValue"
+            type="number"
+            step="0.01"
+            min="0"
+            placeholder="optional"
+            value={form.grossAssetValue}
+            onChange={change}
+            className="mt-1 h-10 w-full rounded-[10px] border border-black/10 px-3 text-sm"
+          />
+        </label>
+        <label className="block">
+          <span className="text-[11px] uppercase tracking-[0.14em] text-gray-500">
+            Period start
+          </span>
+          <input
+            required
+            name="periodStart"
+            type="date"
+            value={form.periodStart}
+            onChange={change}
+            className="mt-1 h-10 w-full rounded-[10px] border border-black/10 px-3 text-sm"
+          />
+        </label>
+        <label className="block">
+          <span className="text-[11px] uppercase tracking-[0.14em] text-gray-500">
+            Period end
+          </span>
+          <input
+            required
+            name="periodEnd"
+            type="date"
+            value={form.periodEnd}
+            onChange={change}
+            className="mt-1 h-10 w-full rounded-[10px] border border-black/10 px-3 text-sm"
+          />
+        </label>
+      </div>
+
+      {implied != null ? (
+        <p className={`text-xs ${divergent ? "text-amber-700" : "text-gray-500"}`}>
+          {divergent
+            ? `Note: gross asset value x 1% / 4 would be $${implied.toFixed(2)}, not $${entered.toFixed(2)}. The figure you entered is what will be used.`
+            : `Gross asset value x 1% / 4 = $${implied.toFixed(2)}.`}
         </p>
       ) : null}
+
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          type="submit"
+          disabled={busy}
+          className="inline-flex h-10 items-center rounded-[10px] bg-ink px-5 text-sm font-medium text-white transition hover:bg-black disabled:opacity-50"
+        >
+          {busy ? "Allocating…" : "Record & allocate"}
+        </button>
+        {error ? <p className="text-sm text-red-700">{error}</p> : null}
+        {result ? (
+          <p className="text-sm text-gray-600">
+            {result.message}
+            {result.reconciles === false ? (
+              <span className="ml-1 font-medium text-red-700">
+                The allocations do not sum to the entered total — do not rely on
+                these figures.
+              </span>
+            ) : null}
+          </p>
+        ) : null}
+      </div>
     </form>
   );
 }
@@ -675,7 +764,7 @@ function FundDetailPage() {
 
       <Section
         title="Declare distribution"
-        action={<span className="text-xs text-gray-500">auto-allocated across all holdings</span>}
+        action={<span className="text-xs text-gray-500">split by ownership for the period</span>}
       >
         <DeclareDistributionForm fundCode={code} onDeclared={reload} />
         <div className="mt-4">
@@ -709,7 +798,7 @@ function FundDetailPage() {
 
       <Section
         title="Declare fee"
-        action={<span className="text-xs text-gray-500">auto-allocated across all holdings</span>}
+        action={<span className="text-xs text-gray-500">split by ownership for the period</span>}
       >
         <DeclareFeeForm fundCode={code} onDeclared={reload} />
         <div className="mt-4">

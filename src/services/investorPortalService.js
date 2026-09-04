@@ -106,11 +106,6 @@ export const updatePortalProfile = async (payload) => {
   return data;
 };
 
-export const fetchPortfolio = async () => {
-  const { data } = await investorApi.get("/portal/portfolio");
-  return data;
-};
-
 export const fetchHoldings = async () => {
   const { data } = await investorApi.get("/portal/holdings");
   return data.data;
