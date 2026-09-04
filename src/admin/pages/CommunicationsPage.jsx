@@ -7,6 +7,7 @@ import {
   fetchAdminCommunications,
   updateAdminCommunication,
 } from "../../services/adminService";
+import SecureMessageInbox from "../components/SecureMessageInbox";
 
 const EMPTY = {
   type: "update",
@@ -155,6 +156,7 @@ function ComposerModal({ open, initial, onClose, onSaved }) {
 }
 
 function CommunicationsPage() {
+  const [tab, setTab] = useState("posts");
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [composerOpen, setComposerOpen] = useState(false);
@@ -173,22 +175,52 @@ function CommunicationsPage() {
           <p className="metric-kicker">Investor communications</p>
           <h2 className="mt-1.5 text-xl font-semibold text-ink md:text-2xl">Communications</h2>
           <p className="mt-1 text-sm text-gray-500">
-            Compose updates and newsletters. Published posts appear in investor portals.
+            {tab === "posts"
+              ? "Compose updates and newsletters. Published posts appear in investor portals."
+              : "Threads investors opened from their portal. Replies appear there, not by email."}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            setEditing(null);
-            setComposerOpen(true);
-          }}
-          className="inline-flex items-center gap-2 rounded-[14px] bg-black px-4 py-2.5 text-sm font-medium text-white shadow-soft hover:bg-[#1f2937]"
-        >
-          <Plus className="h-4 w-4" /> New post
-        </button>
+        {tab === "posts" ? (
+          <button
+            type="button"
+            onClick={() => {
+              setEditing(null);
+              setComposerOpen(true);
+            }}
+            className="inline-flex items-center gap-2 rounded-[14px] bg-black px-4 py-2.5 text-sm font-medium text-white shadow-soft hover:bg-[#1f2937]"
+          >
+            <Plus className="h-4 w-4" /> New post
+          </button>
+        ) : null}
       </header>
 
-      <div className="mt-6 space-y-3">
+      <div className="mt-5 flex gap-1 border-b border-black/10">
+        {[
+          { key: "posts", label: "Posts" },
+          { key: "messages", label: "Secure messages" },
+        ].map(({ key, label }) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => setTab(key)}
+            className={`-mb-px border-b-2 px-4 pb-2.5 pt-1 text-sm font-medium transition ${
+              tab === key
+                ? "border-ink text-ink"
+                : "border-transparent text-gray-500 hover:text-ink"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "messages" ? (
+        <div className="mt-6">
+          <SecureMessageInbox />
+        </div>
+      ) : null}
+
+      <div className={`mt-6 space-y-3 ${tab === "posts" ? "" : "hidden"}`}>
         {loading ? (
           <p className="text-sm text-gray-500">Loading…</p>
         ) : items.length === 0 ? (

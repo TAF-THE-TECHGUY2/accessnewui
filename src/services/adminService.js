@@ -269,6 +269,31 @@ export const createAdminCommunication = async (payload) => {
   return data;
 };
 
+export const fetchAdminThreads = async () => {
+  const { data } = await api.get("/threads");
+  return data;
+};
+
+export const fetchAdminThread = async (id) => {
+  const { data } = await api.get(`/threads/${id}`);
+  return data;
+};
+
+export const replyToAdminThread = async (id, payload) => {
+  const { data } = await api.post(`/threads/${id}/messages`, payload);
+  return data;
+};
+
+export const resolveAdminThread = async (id) => {
+  const { data } = await api.post(`/threads/${id}/resolve`);
+  return data;
+};
+
+export const reopenAdminThread = async (id) => {
+  const { data } = await api.post(`/threads/${id}/reopen`);
+  return data;
+};
+
 export const updateAdminCommunication = async (id, payload) => {
   const { data } = await api.patch(`/communications/${id}`, payload);
   return data;

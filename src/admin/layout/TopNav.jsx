@@ -27,15 +27,27 @@ const routeCopy = {
     title: "Platform Settings",
     subtitle: "Configure operations defaults and the Laravel API environment.",
   },
+  // These pages write their own heading, so the shell should not add a second.
+  "/admin/funds": { hideIntro: true },
+  "/admin/communications": { hideIntro: true },
+  "/admin/email-templates": { hideIntro: true },
 };
 
 function TopNav({ onMenuToggle }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const copy = routeCopy[location.pathname] || {
-    title: "Investor Profile",
-    subtitle: "Review investor identity, commitments, and activity details.",
-  };
+  // The investor detail page is the only unlisted route that wants this
+  // heading, so it is matched rather than used as a catch-all. As a catch-all it
+  // put "Investor Profile" above Funds, Communications and Email Templates,
+  // each of which then had two different headings.
+  const copy =
+    routeCopy[location.pathname] ??
+    (/^\/admin\/investors\/[^/]+$/.test(location.pathname)
+      ? {
+          title: "Investor Profile",
+          subtitle: "Review investor identity, commitments, and activity details.",
+        }
+      : { hideIntro: true });
 
   const handleLogout = async () => {
     await logout();

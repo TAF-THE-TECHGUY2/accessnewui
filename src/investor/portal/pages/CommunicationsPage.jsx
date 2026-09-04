@@ -10,7 +10,6 @@ import {
   Lock,
   Mail,
   Megaphone,
-  MessageSquare,
   Newspaper,
   Phone,
   Send,
@@ -18,12 +17,11 @@ import {
   UserRound,
 } from "lucide-react";
 
-import { useOutletContext } from "react-router-dom";
-
 import {
   fetchCommunication,
   fetchCommunications,
 } from "../../../services/investorPortalService";
+import SecureMessages from "../components/SecureMessages";
 
 const SUPPORT_EMAIL = "investors@ap.boston";
 
@@ -191,28 +189,36 @@ function CommunicationDetail({ id, onBack }) {
  * like one would drop what an investor typed into it — a mail client at least
  * delivers. Each carries its own subject so the recipient can tell them apart.
  */
+/**
+ * Contact routes.
+ *
+ * These open the Secure messages tab with the topic already chosen, rather
+ * than the investor's mail client — there is now a thread to put the message
+ * on, and a reply arrives where they will look for it. Each carries the
+ * category the thread is created with.
+ */
 const CONTACT_ACTIONS = [
   {
     icon: Send,
     label: "Send secure message",
     sub: "Message our team",
-    subject: "Investor portal enquiry",
+    category: "general",
   },
   {
     icon: Phone,
     label: "Request a call",
     sub: "Schedule a time to speak",
-    subject: "Call request",
+    category: "call_request",
   },
   {
     icon: FileText,
     label: "Ask about documents",
     sub: "Request or discuss documents",
-    subject: "Document request",
+    category: "documents",
   },
 ];
 
-function ContactManagement({ investorCode }) {
+function ContactManagement({ onCompose }) {
   return (
     <section className="rounded-[22px] border border-black/10 bg-white p-6 shadow-[0_10px_30px_rgba(15,61,62,0.06)]">
       <h2 className="font-display text-[22px] leading-tight text-[#111111]">
@@ -224,13 +230,12 @@ function ContactManagement({ investorCode }) {
       </p>
 
       <div className="mt-5 space-y-3">
-        {CONTACT_ACTIONS.map(({ icon: Icon, label, sub, subject }) => (
-          <a
+        {CONTACT_ACTIONS.map(({ icon: Icon, label, sub, category }) => (
+          <button
             key={label}
-            href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(
-              investorCode ? `${subject} — ${investorCode}` : subject,
-            )}`}
-            className="flex items-center gap-3 rounded-[14px] border border-black/10 px-4 py-3.5 transition hover:border-black/30"
+            type="button"
+            onClick={() => onCompose(category)}
+            className="flex w-full items-center gap-3 rounded-[14px] border border-black/10 px-4 py-3.5 text-left transition hover:border-black/30"
           >
             <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#eef5f4] text-[#0f3d3e]">
               <Icon className="h-4 w-4" strokeWidth={1.75} />
@@ -242,7 +247,7 @@ function ContactManagement({ investorCode }) {
               <span className="block text-[12px] text-[#6b7280]">{sub}</span>
             </span>
             <ChevronRight className="h-4 w-4 shrink-0 text-[#9ca3af]" />
-          </a>
+          </button>
         ))}
       </div>
 
@@ -316,7 +321,6 @@ const FILTERS = [
 ];
 
 function CommunicationsPage() {
-  const { investor } = useOutletContext();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -324,6 +328,9 @@ function CommunicationsPage() {
   const [tab, setTab] = useState("updates");
   const [filter, setFilter] = useState("all");
   const [showAll, setShowAll] = useState(false);
+  // Set by the sidebar to open Secure messages straight into a compose form
+  // with the topic already chosen.
+  const [composeFor, setComposeFor] = useState(null);
 
   useEffect(() => {
     fetchCommunications()
@@ -426,33 +433,23 @@ function CommunicationsPage() {
                 </>
               )
             ) : (
-              /* No two-way thread exists server-side: investor_messages stores a
-                 subject, a preview and a sent-at, with no body, no direction and
-                 no status. Rendering an inbox here would be inventing one. */
-              <div className="mt-5 rounded-[22px] border border-dashed border-black/15 bg-white/60 p-12 text-center">
-                <MessageSquare className="mx-auto h-6 w-6 text-[#9ca3af]" />
-                <p className="mt-3 text-sm font-medium text-[#111111]">
-                  Secure messaging isn&rsquo;t open yet
-                </p>
-                <p className="mx-auto mt-1.5 max-w-md text-sm leading-6 text-[#6b7280]">
-                  Two-way messaging in the portal is still being built. Until it
-                  is, email{" "}
-                  <a
-                    href={`mailto:${SUPPORT_EMAIL}`}
-                    className="text-[#0f3d3e] underline underline-offset-4"
-                  >
-                    {SUPPORT_EMAIL}
-                  </a>{" "}
-                  and the team will reply within one business day.
-                </p>
-              </div>
+              <SecureMessages
+                composeFor={composeFor}
+                onComposeHandled={() => setComposeFor(null)}
+              />
             )}
           </>
         )}
       </div>
 
       <aside className="space-y-5">
-        <ContactManagement investorCode={investor?.code} />
+        <ContactManagement
+          onCompose={(category) => {
+            setTab("messages");
+            setOpenId(null);
+            setComposeFor(category);
+          }}
+        />
         <ResponseTimeCard />
       </aside>
     </div>

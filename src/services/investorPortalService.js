@@ -210,6 +210,41 @@ export const fetchCommunication = async (id) => {
  * Throws on 422 when the fund has no published unit value — the position genuinely
  * cannot be valued, and the UI says so rather than showing a fabricated number.
  */
+/** Secure message threads for the signed-in investor. */
+export const fetchThreads = async () => {
+  const { data } = await investorApi.get("/portal/threads");
+  return data.data;
+};
+
+/**
+ * One thread with its messages.
+ *
+ * Fetching also marks the team's messages read, so the unread count cannot
+ * drift from what the investor has actually been shown.
+ */
+export const fetchThread = async (id) => {
+  const { data } = await investorApi.get(`/portal/threads/${id}`);
+  return data;
+};
+
+export const createThread = async ({ subject, body, category, portalDocumentId }) => {
+  const { data } = await investorApi.post("/portal/threads", {
+    subject,
+    body,
+    category,
+    portalDocumentId,
+  });
+  return data;
+};
+
+export const replyToThread = async (id, { body, portalDocumentId }) => {
+  const { data } = await investorApi.post(`/portal/threads/${id}/messages`, {
+    body,
+    portalDocumentId,
+  });
+  return data;
+};
+
 /** Password change for a signed-in investor. Requires the current password. */
 export const changePortalPassword = async ({
   currentPassword,
