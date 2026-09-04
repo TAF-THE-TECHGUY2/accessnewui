@@ -265,6 +265,80 @@ function SecurityPanel() {
   );
 }
 
+/**
+ * Newsletter opt-in / opt-out.
+ *
+ * Optimistic: the segmented control moves on click and the request follows,
+ * because a preference toggle that waits on a round trip reads as broken. A
+ * failure puts it back where it was and says so — silently reverting would
+ * leave the investor believing they had opted out.
+ */
+function NewsletterToggle({ value, onChange }) {
+  const [pending, setPending] = useState(null);
+  const [error, setError] = useState(null);
+
+  const shown = pending ?? value;
+
+  const set = async (next) => {
+    if (next === shown) return;
+    setPending(next);
+    setError(null);
+    try {
+      await onChange(next);
+      setPending(null);
+    } catch (err) {
+      setPending(null);
+      setError(
+        err?.response?.data?.message ||
+          "Could not save that. Your preference is unchanged.",
+      );
+    }
+  };
+
+  return (
+    <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-black/5 pt-6">
+      <div>
+        <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-[#6b7280]">
+          Newsletter
+        </p>
+        <p className="mt-1 text-sm text-[#6b7280]">
+          Choose how you&rsquo;d like to receive updates and insights.
+        </p>
+        {error ? (
+          <p className="mt-1.5 flex items-center gap-1.5 text-xs text-red-700">
+            <AlertCircle className="h-3.5 w-3.5" /> {error}
+          </p>
+        ) : null}
+      </div>
+
+      <div
+        role="group"
+        aria-label="Newsletter preference"
+        className="inline-flex overflow-hidden rounded-[12px] border border-black/10"
+      >
+        {[
+          { on: true, label: "Opted in" },
+          { on: false, label: "Opted out" },
+        ].map(({ on, label }) => (
+          <button
+            key={label}
+            type="button"
+            onClick={() => set(on)}
+            aria-pressed={shown === on}
+            className={`px-5 py-2.5 text-sm font-medium transition ${
+              shown === on
+                ? "bg-[#0f3d3e] text-white"
+                : "bg-white text-[#4b5563] hover:bg-[#f7f7f7]"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function ProfilePage() {
   const [profile, setProfile] = useState(null);
   const [documentCount, setDocumentCount] = useState(null);
@@ -430,6 +504,21 @@ function ProfilePage() {
             ))}
           </div>
         )}
+
+        <NewsletterToggle
+          value={profile.editable.newsletterOptedIn !== false}
+          onChange={async (next) => {
+            const updated = await updatePortalProfile({ newsletterOptedIn: next });
+            setProfile(updated);
+            // Merge the one key rather than replacing the form from the
+            // response: the toggle sits below the edit form, and replacing
+            // would discard an address the investor was midway through typing.
+            setForm((current) => ({
+              ...current,
+              newsletterOptedIn: updated.editable.newsletterOptedIn,
+            }));
+          }}
+        />
       </section>
 
       <section className="rounded-[22px] border border-black/10 bg-white p-8 shadow-[0_10px_30px_rgba(15,61,62,0.06)]">

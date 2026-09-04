@@ -14,6 +14,7 @@ import {
   deleteFundUnitPrice,
   downloadFundDocument,
   fetchAdminFund,
+  updateAdminFund,
   uploadFundDocument,
 } from "../../services/adminService";
 
@@ -164,6 +165,101 @@ function DeclareDistributionForm({ fundCode, onDeclared }) {
           {message}
         </p>
       ) : null}
+    </form>
+  );
+}
+
+/**
+ * The descriptive fields the investor portal shows on a fund card: the tagline
+ * under the name, and the Investment Focus / Market attribute rows.
+ *
+ * The portal omits an attribute row whose value is blank rather than rendering
+ * a dash, so clearing a field here removes the row rather than leaving an em
+ * dash that reads as "this fund has no market". Blank is sent as null for that
+ * reason, not as an empty string.
+ */
+function FundProfileForm({ fund, onSaved }) {
+  const [form, setForm] = useState({
+    tagline: fund.tagline || "",
+    investmentFocus: fund.investmentFocus || "",
+    market: fund.market || "",
+    targetYield: fund.targetYield || "",
+    description: fund.description || "",
+  });
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState(null);
+
+  const change = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setBusy(true);
+    setMessage(null);
+    try {
+      await updateAdminFund(fund.code, {
+        tagline: form.tagline.trim() || null,
+        investmentFocus: form.investmentFocus.trim() || null,
+        market: form.market.trim() || null,
+        targetYield: form.targetYield.trim() || null,
+        description: form.description.trim() || null,
+      });
+      setMessage("Saved. The investor portal shows these on the fund card.");
+      onSaved();
+    } catch (err) {
+      const fieldError = err?.response?.data?.errors
+        ? Object.values(err.response.data.errors).flat()[0]
+        : null;
+      setMessage(fieldError || err?.response?.data?.message || "Could not save.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const field = (name, label, placeholder) => (
+    <label className="block">
+      <span className="text-[11px] uppercase tracking-[0.14em] text-gray-500">
+        {label}
+      </span>
+      <input
+        name={name}
+        value={form[name]}
+        onChange={change}
+        placeholder={placeholder}
+        className="mt-1 h-10 w-full rounded-[10px] border border-black/10 px-3 text-sm outline-none focus:border-teal-600"
+      />
+    </label>
+  );
+
+  return (
+    <form onSubmit={submit} className="space-y-4">
+      <div className="grid gap-4 sm:grid-cols-2">
+        {field("tagline", "Tagline", "Residential real estate fund")}
+        {field("targetYield", "Target yield", "8.0% target")}
+        {field("investmentFocus", "Investment focus", "Residential Real Estate")}
+        {field("market", "Market", "Greater Boston")}
+      </div>
+      <label className="block">
+        <span className="text-[11px] uppercase tracking-[0.14em] text-gray-500">
+          Description
+        </span>
+        <textarea
+          name="description"
+          value={form.description}
+          onChange={change}
+          rows={3}
+          className="mt-1 w-full rounded-[10px] border border-black/10 px-3 py-2 text-sm outline-none focus:border-teal-600"
+        />
+      </label>
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          type="submit"
+          disabled={busy}
+          className="inline-flex h-10 items-center rounded-[10px] bg-ink px-5 text-sm font-medium text-white transition hover:bg-black disabled:opacity-50"
+        >
+          {busy ? "Saving…" : "Save fund profile"}
+        </button>
+        {message ? <p className="text-sm text-gray-600">{message}</p> : null}
+      </div>
     </form>
   );
 }
@@ -525,6 +621,14 @@ function FundDetailPage() {
           ) : null}
         </div>
       </div>
+
+      <Section title="Fund profile">
+        <p className="mb-4 text-sm text-gray-600">
+          Shown to investors on the fund card and detail page. A field left
+          blank is omitted there rather than shown as a dash.
+        </p>
+        <FundProfileForm fund={fund} onSaved={reload} />
+      </Section>
 
       <Section
         title="Unit prices"
