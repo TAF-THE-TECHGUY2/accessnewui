@@ -23,6 +23,7 @@ import {
   formatCurrencyDetailed,
   formatDateNumeric,
   formatPercent,
+  formatSignedCurrency,
   formatUnitsFixed,
   gainColor,
 } from "../lib/format";
@@ -242,7 +243,7 @@ function InvestmentPage() {
     {
       label: "Total Return",
       icon: BarChart3,
-      value: `${snapshot.gain >= 0 ? "+" : ""}${formatCurrencyDetailed(snapshot.gain)}`,
+      value: formatSignedCurrency(snapshot.gain),
       color: gainColor(snapshot.gain),
       sub: formatPercent(snapshot.gainPct),
       subColor: gainColor(snapshot.gainPct),

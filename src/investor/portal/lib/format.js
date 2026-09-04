@@ -13,15 +13,34 @@ export const formatCurrency = (amount, currency = "USD") =>
     maximumFractionDigits: 0,
   }).format(amount ?? 0);
 
+/**
+ * Collapses negative zero.
+ *
+ * A gain of -0.00000175 rounds to -0.0 server-side, and JavaScript treats -0 as
+ * >= 0 while Intl renders it as "-$0.00" — which is how a row came to read
+ * "+-$0.00" in production. Every signed figure runs through here first.
+ */
+const denormalise = (v) => (Object.is(v, -0) || v === 0 ? 0 : v);
+
 export const formatCurrencyDetailed = (amount) =>
   new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
     minimumFractionDigits: 2,
-  }).format(amount ?? 0);
+  }).format(denormalise(amount ?? 0));
 
-export const formatPercent = (value) =>
-  `${(value ?? 0) >= 0 ? "+" : ""}${(value ?? 0).toFixed(2)}%`;
+/** A signed currency figure: "+$1,234.00", "-$99.00", "$0.00" for nothing. */
+export const formatSignedCurrency = (amount) => {
+  const v = denormalise(amount ?? 0);
+
+  return `${v > 0 ? "+" : ""}${formatCurrencyDetailed(v)}`;
+};
+
+export const formatPercent = (value) => {
+  const v = denormalise(value ?? 0);
+
+  return `${v > 0 ? "+" : ""}${v.toFixed(2)}%`;
+};
 
 export const formatDate = (iso) =>
   iso

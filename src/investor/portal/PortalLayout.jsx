@@ -29,7 +29,7 @@ function PortalLayout({ investor, setInvestor }) {
   return (
     <div className="min-h-screen bg-[#fafafa]">
       <header className="border-b border-black/10 bg-white">
-        <div className="mx-auto flex max-w-[1180px] flex-wrap items-center gap-4 px-6 py-3 md:flex-nowrap">
+        <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-4 px-6 py-3 md:flex-nowrap">
           <NavLink
             to="/dashboard"
             className="flex shrink-0 items-center gap-3"
@@ -78,7 +78,7 @@ function PortalLayout({ investor, setInvestor }) {
         </div>
       </header>
 
-      <main className="mx-auto max-w-[1180px] px-6 py-8">
+      <main className="mx-auto max-w-[1400px] px-6 py-8">
         <Outlet context={{ investor, setInvestor }} />
       </main>
     </div>

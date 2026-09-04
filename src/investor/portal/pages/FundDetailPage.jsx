@@ -9,6 +9,7 @@ import {
   YAxis,
 } from "recharts";
 import {
+  AlertTriangle,
   ArrowLeft,
   DollarSign,
   Info,
@@ -37,6 +38,7 @@ import {
   formatDate,
   formatPercent,
   formatPrice,
+  formatSignedCurrency,
   formatUnits,
   gainColor,
 } from "../lib/format";
@@ -316,28 +318,39 @@ function InvestmentHistoryTable({ rows, totals }) {
                   {formatCurrencyDetailed(r.unitsValue)}
                 </td>
                 <td className="px-2 py-4 text-right">
-                  <span
-                    className="block font-medium"
-                    style={{ color: gainColor(r.gain) }}
-                  >
-                    {r.gain >= 0 ? "+" : ""}
-                    {formatCurrencyDetailed(r.gain)}
-                  </span>
-                  <span
-                    className="block text-[12px]"
-                    style={{ color: gainColor(r.gainPct) }}
-                  >
-                    {formatPercent(r.gainPct)}
-                  </span>
+                  {r.valuedAtDeposit ? (
+                    <span className="block text-[#64748b]">not yet valued</span>
+                  ) : (
+                    <>
+                      <span
+                        className="block font-medium"
+                        style={{ color: gainColor(r.gain) }}
+                      >
+                        {formatSignedCurrency(r.gain)}
+                      </span>
+                      <span
+                        className="block text-[12px]"
+                        style={{ color: gainColor(r.gainPct) }}
+                      >
+                        {formatPercent(r.gainPct)}
+                      </span>
+                    </>
+                  )}
                 </td>
                 <td className="px-2 py-4 text-right text-[#64748b]">
-                  {r.holdingYears.toFixed(4)}
+                  {r.valuedAtDeposit ? "—" : r.holdingYears.toFixed(4)}
                 </td>
                 <td
                   className="px-2 py-4 text-right"
-                  style={{ color: gainColor(r.annualizedReturnPct) }}
+                  style={{
+                    color: r.valuedAtDeposit
+                      ? "#64748b"
+                      : gainColor(r.annualizedReturnPct),
+                  }}
                 >
-                  {formatPercent(r.annualizedReturnPct)}
+                  {r.valuedAtDeposit
+                    ? "—"
+                    : formatPercent(r.annualizedReturnPct)}
                 </td>
               </tr>
             ))}
@@ -372,8 +385,7 @@ function InvestmentHistoryTable({ rows, totals }) {
                   className="block"
                   style={{ color: gainColor(totals.gain) }}
                 >
-                  {totals.gain >= 0 ? "+" : ""}
-                  {formatCurrencyDetailed(totals.gain)}
+                  {formatSignedCurrency(totals.gain)}
                 </span>
                 <span
                   className="block text-[12px]"
@@ -398,6 +410,16 @@ function InvestmentHistoryTable({ rows, totals }) {
           </tfoot>
         </table>
       </div>
+
+      {totals.hasUnvaluedDeposits ? (
+        <p className="mt-4 flex items-start gap-2 rounded-[12px] border border-amber-200 bg-amber-50 px-4 py-3 text-[12px] leading-5 text-amber-900">
+          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          One or more deposits was made after {totals.unitValueAsOf}, the date
+          of the latest published unit price. Those units did not exist on that
+          date, so they cannot be valued yet and show no return. They will be
+          valued at the next published price.
+        </p>
+      ) : null}
 
       <p className="mt-4 text-[12px] leading-5 text-[#6b7280]">
         Purchase price is your contribution divided by the units it bought.
@@ -636,7 +658,7 @@ function FundDetailPage() {
     <div className="space-y-6">
       <BackLink />
 
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+      <div className="grid items-start gap-6 lg:grid-cols-2">
         <div className="space-y-6">
           <section className="rounded-[22px] border border-black/10 bg-white p-6 shadow-[0_10px_30px_rgba(15,61,62,0.06)]">
             <div className="flex items-start gap-4">
@@ -663,10 +685,7 @@ function FundDetailPage() {
 
             {breakdown ? (
               <div className="mt-6 overflow-hidden rounded-[16px] border border-black/10">
-                <MetricStrip
-                  metrics={portfolioMetrics(breakdown.totals)}
-                  cols={2}
-                />
+                <MetricStrip metrics={portfolioMetrics(breakdown.totals)} />
               </div>
             ) : (
               <div className="mt-6">
@@ -683,13 +702,7 @@ function FundDetailPage() {
 
             <PremiumNotice holding={holding} />
           </section>
-        </div>
 
-        <div className="space-y-6">
-          <NavHistoryChart fundCode={code} />
-          {/* Beside the chart rather than under the identity card, which is the
-              taller of the two columns — under it the tiles left the right
-              column half empty. */}
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             <ActionTile
               icon={Plus}
@@ -722,7 +735,28 @@ function FundDetailPage() {
             />
           </div>
         </div>
+
+        <div className="space-y-6">
+          <NavHistoryChart fundCode={code} />
+        </div>
       </div>
+
+      {/* Full width, below the two columns, rather than beside the chart as
+          the reference design has it.
+
+          The design's right column is 614px and fits its eight columns at a
+          two-decimal purchase price. This table carries nine, with the price to
+          six decimals and the years held — the two figures the fund manager
+          reconciles against his workbook — and needs 842px. In the right column
+          it clipped Total Return and Annualized behind a scrollbar, which hides
+          the two columns an investor looks for first. Everything else on this
+          page follows the design exactly. */}
+      {breakdown && breakdown.rows.length > 0 ? (
+        <InvestmentHistoryTable
+          rows={breakdown.rows}
+          totals={breakdown.totals}
+        />
+      ) : null}
 
       <section className="rounded-[22px] border border-black/10 bg-white p-6 shadow-[0_10px_30px_rgba(15,61,62,0.06)]">
         {panel === "invest" ? (
@@ -842,8 +876,12 @@ function FundDetailPage() {
                 head={["Period", "Fund total", "Your share", "Your fee"]}
                 rows={(fees.aum || []).map((r) => [
                   `${r.periodStart} → ${r.periodEnd}`,
-                  r.fundTotal != null ? formatCurrencyDetailed(r.fundTotal) : "—",
-                  r.ownershipPct != null ? `${r.ownershipPct.toFixed(3)}%` : "—",
+                  r.fundTotal != null
+                    ? formatCurrencyDetailed(r.fundTotal)
+                    : "—",
+                  r.ownershipPct != null
+                    ? `${r.ownershipPct.toFixed(3)}%`
+                    : "—",
                   formatCurrencyDetailed(r.amount),
                 ])}
                 empty="No AUM fees have been allocated yet."
@@ -852,16 +890,6 @@ function FundDetailPage() {
           </>
         ) : null}
       </section>
-
-      {/* Full width rather than beside the chart as the reference design has
-          it: nine columns inside a 60% column clipped the last three behind a
-          horizontal scrollbar, and these are the figures being reconciled. */}
-      {breakdown && breakdown.rows.length > 0 ? (
-        <InvestmentHistoryTable
-          rows={breakdown.rows}
-          totals={breakdown.totals}
-        />
-      ) : null}
     </div>
   );
 }

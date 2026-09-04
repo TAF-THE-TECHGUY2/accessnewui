@@ -4,6 +4,7 @@ import {
   formatCurrencyDetailed,
   formatDateNumeric,
   formatPercent,
+  formatSignedCurrency,
   formatUnitsFixed,
   gainColor,
 } from "../lib/format";
@@ -37,7 +38,7 @@ export function MetricStrip({ metrics, size = "md", cols = 4, className = "" }) 
             <span className="text-[13px] text-[#4b5563]">{m.label}</span>
           </div>
           <p
-            className={`font-display mt-2 ${valueSize} leading-none`}
+            className={`font-display mt-2 ${valueSize} whitespace-nowrap leading-none tabular-nums`}
             style={{ color: m.color ?? "#111111" }}
           >
             {m.value}
@@ -74,7 +75,7 @@ export function portfolioMetrics(totals) {
     },
     {
       label: "Total Return",
-      value: `${totals.gain >= 0 ? "+" : ""}${formatCurrencyDetailed(totals.gain)}`,
+      value: formatSignedCurrency(totals.gain),
       color: gainColor(totals.gain),
       sub: formatPercent(totals.gainPct),
       subColor: gainColor(totals.gainPct),
