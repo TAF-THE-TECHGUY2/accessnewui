@@ -43,7 +43,7 @@ function MetricNote({ children }) {
 }
 
 export function MetricStrip({ metrics, size = "md", cols = 4, className = "" }) {
-  const valueSize = size === "lg" ? "text-[30px]" : "text-[17px]";
+  const valueSize = size === "lg" ? "text-[30px]" : "text-[20px]";
 
   // Four across needs a full-width container; in a narrow one the figures
   // collide. `cols={2}` gives a 2x2 block for the fund detail's left column.
@@ -55,7 +55,7 @@ export function MetricStrip({ metrics, size = "md", cols = 4, className = "" }) 
   return (
     <div className={`grid divide-black/10 ${grid} ${className}`}>
       {metrics.map((m) => (
-        <div key={m.label} className={size === "lg" ? "px-6 py-6" : "px-3 py-3"}>
+        <div key={m.label} className={size === "lg" ? "px-6 py-6" : "px-2 py-4"}>
           <div className="flex items-center gap-2">
             {m.icon ? (
               <span className="grid h-7 w-7 place-items-center rounded-full border border-black/10 text-[#0f3d3e]">

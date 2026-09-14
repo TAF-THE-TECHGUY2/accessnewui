@@ -89,10 +89,10 @@ function PremiumNote({ holding }) {
     <>
       <p>
         You entered at <strong>${(holding.entryPrice ?? 0).toFixed(2)}</strong>{" "}
-        per unit — the{" "}
-        <strong>${holding.entryBookValue.toFixed(2)}</strong> book value plus a{" "}
-        <strong>{(holding.premiumPct ?? 0).toFixed(1)}% entry premium</strong> of{" "}
-        {formatCurrencyDetailed(holding.premiumPaid)}.
+        per unit — the <strong>${holding.entryBookValue.toFixed(2)}</strong>{" "}
+        book value plus a{" "}
+        <strong>{(holding.premiumPct ?? 0).toFixed(1)}% entry premium</strong>{" "}
+        of {formatCurrencyDetailed(holding.premiumPaid)}.
       </p>
       <p className="mt-1.5">
         {holding.gainLoss < 0
@@ -156,7 +156,7 @@ function NavHistoryChart({ fundCode }) {
   return (
     <section className="rounded-[12px] border border-black/10 bg-white p-6 shadow-[0_10px_30px_rgba(15,61,62,0.06)]">
       <div className="flex items-start justify-between gap-4">
-        <h2 className="font-display text-[20px] leading-tight text-[#111111]">
+        <h2 className="font-display text-[18px] leading-tight text-[#111111]">
           NAV Per Unit History
         </h2>
         {latest != null ? (
@@ -201,8 +201,11 @@ function NavHistoryChart({ fundCode }) {
                 // Fixed rather than fitted to the data: a domain that moves with
                 // the series makes two quarters' charts incomparable, and the
                 // whole-number ticks give the gridlines a readable step.
+                type="number"
+                scale="linear"
                 domain={[8, 14]}
                 ticks={[8, 9, 10, 11, 12, 13, 14]}
+                allowDecimals
                 tickFormatter={(v) => v.toFixed(1)}
                 width={40}
               />
@@ -267,32 +270,48 @@ function NavHistoryChart({ fundCode }) {
  * Those two columns are what the fund manager reconciles against his workbook.
  */
 function InvestmentHistoryTable({ rows, totals }) {
-  const cell = "px-2 py-3 text-right";
+  const cell = "px-1.5 py-2 text-right";
 
   return (
     <section className="rounded-[12px] border border-black/10 bg-white p-6 shadow-[0_10px_30px_rgba(15,61,62,0.06)]">
-      <h2 className="font-display text-[20px] leading-tight text-[#111111]">
+      <h2 className="font-display text-[18px] leading-tight text-[#111111]">
         Investment History
       </h2>
 
       <div className="mt-4 overflow-x-auto">
-        <table className="w-full min-w-[640px] text-[13px] tabular-nums">
-          <thead className="text-[10px] uppercase tracking-[0.06em] text-[#64748b]">
+        <table className="w-full text-[13px] tabular-nums">
+          <thead className="text-[11px] text-[#64748b]">
             <tr className="border-b border-black/10">
-              <th className="px-2 py-2 text-left font-medium">Deposit Date</th>
-              <th className="px-2 py-2 text-right font-medium">Amount Invested</th>
-              <th className="px-2 py-2 text-right font-medium">%</th>
-              <th className="px-2 py-2 text-right font-medium">Units Held</th>
-              <th className="px-2 py-2 text-right font-medium">Purchase Price</th>
-              <th className="px-2 py-2 text-right font-medium">Current Value</th>
-              <th className="px-2 py-2 text-right font-medium">Total Return</th>
-              <th className="px-2 py-2 text-right font-medium">Annualized</th>
+              <th className="whitespace-nowrap px-1.5 py-2 text-left font-medium">
+                Deposit Date
+              </th>
+              <th className="whitespace-nowrap px-1.5 py-2 text-right font-medium">
+                Amount Invested
+              </th>
+              <th className="whitespace-nowrap px-1.5 py-2 text-right font-medium">
+                %
+              </th>
+              <th className="whitespace-nowrap px-1.5 py-2 text-right font-medium">
+                Units Held
+              </th>
+              <th className="whitespace-nowrap px-1.5 py-2 text-right font-medium">
+                Purchase Price
+              </th>
+              <th className="whitespace-nowrap px-1.5 py-2 text-right font-medium">
+                Current Value
+              </th>
+              <th className="whitespace-nowrap px-1.5 py-2 text-right font-medium">
+                Total Return
+              </th>
+              <th className="whitespace-nowrap px-1.5 py-2 text-right font-medium">
+                Annualized
+              </th>
             </tr>
           </thead>
           <tbody>
             {rows.map((r) => (
               <tr key={r.transactionId} className="border-b border-black/5">
-                <td className="whitespace-nowrap px-2 py-3 text-left text-[#111111]">
+                <td className="whitespace-nowrap px-1.5 py-2 text-left text-[#111111]">
                   {r.depositDate}
                 </td>
                 <td className={`${cell} text-[#111111]`}>
@@ -360,13 +379,7 @@ function InvestmentHistoryTable({ rows, totals }) {
           </tbody>
           <tfoot className="font-semibold">
             <tr className="border-t border-black/20">
-              <td className="px-2 py-3 text-left text-[#111111]">
-                Total
-                <span className="block text-[10px] font-normal text-[#9ca3af]">
-                  {totals.investmentCount} investment
-                  {totals.investmentCount === 1 ? "" : "s"}
-                </span>
-              </td>
+              <td className="px-2 py-2 text-left text-[#111111]">Total</td>
               <td className={`${cell} text-[#111111]`}>
                 {formatCurrencyDetailed(totals.contribution)}
               </td>
@@ -374,14 +387,15 @@ function InvestmentHistoryTable({ rows, totals }) {
               <td className={`${cell} text-[#111111]`}>
                 {formatUnits(totals.units)}
               </td>
-              <td className={`${cell} text-[#111111]`}>
+              {/* The full-precision weighted average is on the title rather
+                  than under the figure: at two decimals it is indistinguishable
+                  from a single deposit's price, but as visible subtext it was
+                  clutter the design does not have. */}
+              <td
+                className={`${cell} text-[#111111]`}
+                title={`${formatPrice(totals.weightedAverageUnitPrice)} weighted average`}
+              >
                 {formatCurrencyDetailed(totals.weightedAverageUnitPrice)}
-                {/* The full precision the fund manager reconciles against: at
-                    two decimals this is indistinguishable from a single
-                    deposit's price. */}
-                <span className="block whitespace-nowrap text-[10px] font-normal text-[#9ca3af]">
-                  {formatPrice(totals.weightedAverageUnitPrice)}
-                </span>
               </td>
               <td className={`${cell} text-[#111111]`}>
                 {formatCurrencyDetailed(totals.unitsValue)}
@@ -403,14 +417,9 @@ function InvestmentHistoryTable({ rows, totals }) {
               <td
                 className={cell}
                 style={{ color: gainColor(totals.annualizedReturnPct) }}
+                title={`over ${totals.weightedAverageHoldingPeriodYears.toFixed(4)} years, units-weighted`}
               >
                 {formatPercent(totals.annualizedReturnPct)}
-                {/* Years held lost its column to the design's eight. The
-                    units-weighted figure is the one that is reconciled, so it
-                    keeps a home here rather than disappearing. */}
-                <span className="block whitespace-nowrap text-[10px] font-normal text-[#9ca3af]">
-                  {totals.weightedAverageHoldingPeriodYears.toFixed(4)} yrs held
-                </span>
               </td>
             </tr>
           </tfoot>
@@ -420,15 +429,11 @@ function InvestmentHistoryTable({ rows, totals }) {
       {totals.hasUnvaluedDeposits ? (
         <p className="mt-3 flex items-start gap-2 rounded-[8px] border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] leading-5 text-amber-900">
           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          One or more deposits was made after {totals.unitValueAsOf}, the date of
-          the latest published unit price, so those units cannot be valued yet.
+          One or more deposits was made after {totals.unitValueAsOf}, the date
+          of the latest published unit price, so those units cannot be valued
+          yet.
         </p>
       ) : null}
-
-      <p className="mt-3 text-[11px] leading-5 text-[#6b7280]">
-        Purchase price is your contribution divided by the units it bought.
-        Holding periods run to {totals.unitValueAsOf} using a 365.25-day year.
-      </p>
     </section>
   );
 }
@@ -439,7 +444,7 @@ function ActionTile({ icon: Icon, label, sub, active, primary, onClick }) {
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`flex h-[100px] flex-col items-center justify-center gap-1.5 rounded-[12px] border px-2 text-center transition ${
+      className={`flex h-full flex-col items-center justify-center gap-1.5 rounded-[12px] border px-2 text-center transition ${
         primary
           ? "border-black bg-black text-white hover:bg-[#1f2937]"
           : active
@@ -523,13 +528,13 @@ function InvestMorePanel({ fundName, onFunded }) {
             placeholder="25,000"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            className="h-12 w-56 rounded-[14px] border border-black/10 pl-7 pr-3 text-sm outline-none focus:border-teal-600"
+            className="h-11 w-full rounded-[12px] border border-black/10 pl-7 pr-3 text-[13px] outline-none focus:border-teal-600"
           />
         </div>
         <button
           type="submit"
           disabled={!valid}
-          className="inline-flex h-12 items-center rounded-[14px] bg-black px-6 text-sm font-medium text-white transition hover:bg-[#1f2937] disabled:opacity-40"
+          className="inline-flex h-11 items-center rounded-[12px] bg-black px-6 text-[13px] font-medium text-white transition hover:bg-[#1f2937] disabled:opacity-60"
         >
           Continue
         </button>
@@ -709,7 +714,7 @@ function FundDetailPage() {
             </div>
           </section>
 
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid auto-rows-[100px] grid-cols-4 items-stretch gap-3">
             <ActionTile
               icon={Plus}
               label="Add Capital"
@@ -740,6 +745,155 @@ function FundDetailPage() {
               onClick={() => setPanel("fees")}
             />
           </div>
+
+          {panel ? (
+            <section className="rounded-[12px] border border-black/10 bg-white p-6 shadow-[0_10px_30px_rgba(15,61,62,0.06)]">
+              <div className="mb-4 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setPanel(null)}
+                  className="text-[13px] text-[#6b7280] transition hover:text-[#111111]"
+                >
+                  Close
+                </button>
+              </div>
+              {panel === "invest" ? (
+                <InvestMorePanel fundName={holding.fundName} onFunded={load} />
+              ) : null}
+
+              {panel === "holdings" ? (
+                <>
+                  <h3 className="font-display text-[20px] leading-tight text-[#111111]">
+                    Your holding
+                  </h3>
+                  <dl className="mt-4 grid gap-5 sm:grid-cols-2">
+                    <Field
+                      label="Current unit price"
+                      value={`$${holding.currentUnitPrice.toFixed(4)}`}
+                      hint="published book value"
+                    />
+                    <Field
+                      label="Units held"
+                      value={formatUnits(holding.totalUnits)}
+                    />
+                    <Field
+                      label="Total distributions"
+                      value={formatCurrency(holding.totalDistributions)}
+                    />
+                    <Field
+                      label="First invested"
+                      value={formatDate(holding.firstTransactionDate)}
+                      hint={
+                        holding.transactionCount > 1
+                          ? `${holding.transactionCount} investments`
+                          : undefined
+                      }
+                    />
+                    <Field
+                      label="% of portfolio"
+                      value={`${holding.percentOfPortfolio.toFixed(1)}%`}
+                    />
+                    <Field
+                      label="Target yield"
+                      value={holding.targetYield || "—"}
+                    />
+                  </dl>
+                </>
+              ) : null}
+
+              {panel === "distributions" ? (
+                <>
+                  <h3 className="font-display text-[20px] leading-tight text-[#111111]">
+                    Distributions — {formatCurrency(distributions.total)} total
+                  </h3>
+                  <div className="mt-4">
+                    <MiniTable
+                      head={["Date", "Amount"]}
+                      rows={distributions.data.map((d) => [
+                        formatDate(d.date),
+                        formatCurrencyDetailed(d.amount),
+                      ])}
+                      empty="No distributions have been paid yet."
+                    />
+                  </div>
+                </>
+              ) : null}
+
+              {panel === "fees" ? (
+                <>
+                  <h3 className="font-display text-[20px] leading-tight text-[#111111]">
+                    Fees
+                  </h3>
+
+                  {/* The fund publishes a unit price already net of all fund expenses
+                    and fees, so the returns above are net too. Saying so is not
+                    decoration: without it these figures read as a charge still to
+                    come, and an investor subtracting them again would understate
+                    their own position. */}
+                  <div className="mt-3 flex items-start gap-3 rounded-[14px] border border-black/10 bg-[#f7f5f1] p-4">
+                    <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#6b7280]" />
+                    <div className="text-[13px] leading-6 text-[#1f2937]">
+                      <p>
+                        <strong>
+                          These figures are for transparency only.
+                        </strong>{" "}
+                        Fees are charged at fund level and paid by the fund.
+                      </p>
+                      {fees.alreadyNetOfFees ? (
+                        <p className="mt-1.5 text-[#4b5563]">
+                          The unit price your position is valued at is already
+                          net of all fund expenses and fees, so your returns
+                          above are also net. Do not subtract the amounts below
+                          again — they are already reflected.
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  <dl className="mt-4 grid gap-5 sm:grid-cols-3">
+                    <Field
+                      label="Rate"
+                      value={
+                        fees.aumRatePct != null
+                          ? `${fees.aumRatePct.toFixed(2)}% per year`
+                          : "—"
+                      }
+                      hint="of gross asset value, charged quarterly"
+                    />
+                    <Field
+                      label="Your AUM fees to date"
+                      value={formatCurrencyDetailed(fees.totalAum)}
+                      hint={`${fees.aum?.length ?? 0} period${(fees.aum?.length ?? 0) === 1 ? "" : "s"}`}
+                    />
+                    <Field
+                      label="Your performance fees to date"
+                      value={formatCurrencyDetailed(fees.totalPerformance)}
+                    />
+                  </dl>
+
+                  {/* Each period shows the fund's total and the share it was split
+                    by, so the investor's own figure can be checked rather than
+                    taken on trust. */}
+                  <div className="mt-4">
+                    <MiniTable
+                      head={["Period", "Fund total", "Your share", "Your fee"]}
+                      rows={(fees.aum || []).map((r) => [
+                        `${r.periodStart} → ${r.periodEnd}`,
+                        r.fundTotal != null
+                          ? formatCurrencyDetailed(r.fundTotal)
+                          : "—",
+                        r.ownershipPct != null
+                          ? `${r.ownershipPct.toFixed(3)}%`
+                          : "—",
+                        formatCurrencyDetailed(r.amount),
+                      ])}
+                      empty="No AUM fees have been allocated yet."
+                    />
+                  </div>
+                </>
+              ) : null}
+            </section>
+          ) : null}
         </div>
 
         <div className="space-y-4">
@@ -752,150 +906,6 @@ function FundDetailPage() {
           ) : null}
         </div>
       </div>
-
-      {panel ? (
-        <section className="rounded-[12px] border border-black/10 bg-white p-6 shadow-[0_10px_30px_rgba(15,61,62,0.06)]">
-          <div className="mb-4 flex justify-end">
-            <button
-              type="button"
-              onClick={() => setPanel(null)}
-              className="text-[13px] text-[#6b7280] transition hover:text-[#111111]"
-            >
-              Close
-            </button>
-          </div>
-        {panel === "invest" ? (
-          <InvestMorePanel fundName={holding.fundName} onFunded={load} />
-        ) : null}
-
-        {panel === "holdings" ? (
-          <>
-            <h3 className="font-display text-[20px] leading-tight text-[#111111]">
-              Your holding
-            </h3>
-            <dl className="mt-4 grid gap-5 sm:grid-cols-2">
-              <Field
-                label="Current unit price"
-                value={`$${holding.currentUnitPrice.toFixed(4)}`}
-                hint="published book value"
-              />
-              <Field
-                label="Units held"
-                value={formatUnits(holding.totalUnits)}
-              />
-              <Field
-                label="Total distributions"
-                value={formatCurrency(holding.totalDistributions)}
-              />
-              <Field
-                label="First invested"
-                value={formatDate(holding.firstTransactionDate)}
-                hint={
-                  holding.transactionCount > 1
-                    ? `${holding.transactionCount} investments`
-                    : undefined
-                }
-              />
-              <Field
-                label="% of portfolio"
-                value={`${holding.percentOfPortfolio.toFixed(1)}%`}
-              />
-              <Field label="Target yield" value={holding.targetYield || "—"} />
-            </dl>
-          </>
-        ) : null}
-
-        {panel === "distributions" ? (
-          <>
-            <h3 className="font-display text-[20px] leading-tight text-[#111111]">
-              Distributions — {formatCurrency(distributions.total)} total
-            </h3>
-            <div className="mt-4">
-              <MiniTable
-                head={["Date", "Amount"]}
-                rows={distributions.data.map((d) => [
-                  formatDate(d.date),
-                  formatCurrencyDetailed(d.amount),
-                ])}
-                empty="No distributions have been paid yet."
-              />
-            </div>
-          </>
-        ) : null}
-
-        {panel === "fees" ? (
-          <>
-            <h3 className="font-display text-[20px] leading-tight text-[#111111]">
-              Fees
-            </h3>
-
-            {/* The fund publishes a unit price already net of all fund expenses
-                and fees, so the returns above are net too. Saying so is not
-                decoration: without it these figures read as a charge still to
-                come, and an investor subtracting them again would understate
-                their own position. */}
-            <div className="mt-3 flex items-start gap-3 rounded-[14px] border border-black/10 bg-[#f7f5f1] p-4">
-              <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#6b7280]" />
-              <div className="text-[13px] leading-6 text-[#1f2937]">
-                <p>
-                  <strong>These figures are for transparency only.</strong> Fees
-                  are charged at fund level and paid by the fund.
-                </p>
-                {fees.alreadyNetOfFees ? (
-                  <p className="mt-1.5 text-[#4b5563]">
-                    The unit price your position is valued at is already net of
-                    all fund expenses and fees, so your returns above are also
-                    net. Do not subtract the amounts below again — they are
-                    already reflected.
-                  </p>
-                ) : null}
-              </div>
-            </div>
-
-            <dl className="mt-4 grid gap-5 sm:grid-cols-3">
-              <Field
-                label="Rate"
-                value={
-                  fees.aumRatePct != null
-                    ? `${fees.aumRatePct.toFixed(2)}% per year`
-                    : "—"
-                }
-                hint="of gross asset value, charged quarterly"
-              />
-              <Field
-                label="Your AUM fees to date"
-                value={formatCurrencyDetailed(fees.totalAum)}
-                hint={`${fees.aum?.length ?? 0} period${(fees.aum?.length ?? 0) === 1 ? "" : "s"}`}
-              />
-              <Field
-                label="Your performance fees to date"
-                value={formatCurrencyDetailed(fees.totalPerformance)}
-              />
-            </dl>
-
-            {/* Each period shows the fund's total and the share it was split
-                by, so the investor's own figure can be checked rather than
-                taken on trust. */}
-            <div className="mt-4">
-              <MiniTable
-                head={["Period", "Fund total", "Your share", "Your fee"]}
-                rows={(fees.aum || []).map((r) => [
-                  `${r.periodStart} → ${r.periodEnd}`,
-                  r.fundTotal != null
-                    ? formatCurrencyDetailed(r.fundTotal)
-                    : "—",
-                  r.ownershipPct != null
-                    ? `${r.ownershipPct.toFixed(3)}%`
-                    : "—",
-                  formatCurrencyDetailed(r.amount),
-                ])}
-                empty="No AUM fees have been allocated yet."
-              />
-            </div>
-          </>
-        ) : null}
-        </section>
-      ) : null}
     </div>
   );
 }

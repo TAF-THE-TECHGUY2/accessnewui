@@ -293,11 +293,18 @@ test.describe("Investment figures, end to end through the UI", () => {
       await expect(body).toContainText(inv.expect.gain);
     }
 
-    // Years held lost its column to the design's eight, so the two figures the
-    // fund manager reconciles against live in the Total row instead — the
-    // weighted average price at full precision, and the units-weighted period.
-    await expect(body).toContainText(TOTALS.weightedAverageUnitPrice);
-    await expect(body).toContainText(TOTALS.wahp);
+    // Years held lost its column to the design's eight, and the full-precision
+    // weighted average lost its subtext. Both figures the fund manager
+    // reconciles against are still on the page, on the Total row's own cells —
+    // asserted here so a later tidy-up cannot quietly drop them.
+    await expect(
+      page.locator(`tfoot td[title*="${TOTALS.weightedAverageUnitPrice}"]`),
+      "the full-precision weighted average price must remain reachable",
+    ).toHaveCount(1);
+    await expect(
+      page.locator(`tfoot td[title*="${TOTALS.wahp}"]`),
+      "the units-weighted holding period must remain reachable",
+    ).toHaveCount(1);
 
     await expect(body).not.toContainText("+0.00%");
 
