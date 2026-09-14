@@ -104,6 +104,30 @@ function PremiumNote({ holding }) {
 }
 
 /**
+ * True below the md breakpoint.
+ *
+ * Some of this page cannot be solved with CSS alone — an eight-column table has
+ * to become cards, and the chart has to drop axis ticks — so the breakpoint is
+ * read in JavaScript too, from the same 768px the classes use.
+ */
+function useIsNarrow() {
+  const [narrow, setNarrow] = useState(
+    () => typeof window !== "undefined" && window.innerWidth < 768,
+  );
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const onChange = (e) => setNarrow(e.matches);
+    setNarrow(mq.matches);
+    mq.addEventListener("change", onChange);
+
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
+  return narrow;
+}
+
+/**
  * NAV per unit over the fund's published history.
  *
  * The fund's book value, not the investor's position — so it is drawn from the
@@ -111,6 +135,7 @@ function PremiumNote({ holding }) {
  */
 function NavHistoryChart({ fundCode }) {
   const [points, setPoints] = useState(null);
+  const isNarrow = useIsNarrow();
 
   useEffect(() => {
     let cancelled = false;
@@ -144,19 +169,33 @@ function NavHistoryChart({ fundCode }) {
   // March and September of each year, plus whatever the series ends on. Left to
   // itself the axis drops labels unevenly as the series grows; naming them keeps
   // the spacing regular and the last quarter always visible.
+  // March and September of each year, plus whatever the series ends on. Left to
+  // itself the axis drops labels unevenly as the series grows; naming them keeps
+  // the spacing regular and the last quarter always visible. On a phone only
+  // every March survives, or the labels collide.
   const ticks = useMemo(() => {
-    const wanted = data
-      .filter((d) => /^(3|9)\//.test(d.label))
-      .map((d) => d.label);
+    const pattern = isNarrow ? /^3\// : /^(3|9)\//;
+    const wanted = data.filter((d) => pattern.test(d.label)).map((d) => d.label);
     const last = data.at(-1)?.label;
 
-    return last && !wanted.includes(last) ? [...wanted, last] : wanted;
-  }, [data]);
+    if (!last || wanted.includes(last)) {
+      return wanted;
+    }
+
+    // The final quarter always gets a label, but not next to one it would sit
+    // on top of: 3/2026 and 6/2026 are one data point apart and overlapped.
+    const lastIndex = data.length - 1;
+    const previous = wanted.at(-1);
+    const previousIndex = data.findIndex((d) => d.label === previous);
+    const tooClose = lastIndex - previousIndex < 2;
+
+    return [...(tooClose ? wanted.slice(0, -1) : wanted), last];
+  }, [data, isNarrow]);
 
   return (
-    <section className="rounded-[12px] border border-black/10 bg-white p-6 shadow-[0_10px_30px_rgba(15,61,62,0.06)]">
+    <section className="min-w-0 rounded-[12px] border border-black/10 bg-white p-4 shadow-[0_10px_30px_rgba(15,61,62,0.06)] md:p-6">
       <div className="flex items-start justify-between gap-4">
-        <h2 className="font-display text-[18px] leading-tight text-[#111111]">
+        <h2 className="font-display text-[16px] leading-tight text-[#111111] md:text-[18px]">
           NAV Per Unit History
         </h2>
         {latest != null ? (
@@ -166,7 +205,7 @@ function NavHistoryChart({ fundCode }) {
         ) : null}
       </div>
 
-      <div className="mt-3 h-[220px]">
+      <div className="mt-3 h-[200px] md:h-[220px]">
         {points == null ? (
           <p className="grid h-full place-items-center text-[13px] text-[#6b7280]">
             Loading…
@@ -269,16 +308,102 @@ function NavHistoryChart({ fundCode }) {
  * become the same number; the units-weighted holding period has no other home.
  * Those two columns are what the fund manager reconciles against his workbook.
  */
+/**
+ * One deposit, as a card.
+ *
+ * Eight columns cannot be read at 400px and a sideways-scrolling table hides
+ * the two columns an investor looks for first, so below md the same figures are
+ * stacked as label/value pairs instead.
+ */
+function DepositCard({ row, total = false }) {
+  const pairs = total
+    ? [
+        ["Amount Invested", formatCurrencyDetailed(row.contribution)],
+        ["%", "100.00%"],
+        ["Units Held", formatUnits(row.units)],
+        ["Purchase Price", formatCurrencyDetailed(row.weightedAverageUnitPrice)],
+        ["Current Value", formatCurrencyDetailed(row.unitsValue)],
+      ]
+    : [
+        ["Amount Invested", formatCurrencyDetailed(row.contribution)],
+        ["%", `${row.contributionPct.toFixed(2)}%`],
+        ["Units Held", formatUnits(row.units)],
+        ["Purchase Price", formatCurrencyDetailed(row.unitPrice)],
+        ["Current Value", formatCurrencyDetailed(row.unitsValue)],
+      ];
+
+  const gain = total ? row.gain : row.gain;
+  const gainPct = total ? row.gainPct : row.gainPct;
+  const annualized = row.annualizedReturnPct;
+  const unvalued = !total && row.valuedAtDeposit;
+
+  return (
+    <div
+      className={`rounded-[10px] border p-3 ${
+        total ? "border-black/20 bg-[#fafafa]" : "border-black/10 bg-white"
+      }`}
+    >
+      <p className="text-[13px] font-semibold text-[#111111]">
+        {total ? "Total" : row.depositDate}
+      </p>
+      <dl className="mt-2 space-y-1.5">
+        {pairs.map(([label, value]) => (
+          <div key={label} className="flex justify-between gap-3 text-[13px]">
+            <dt className="text-[#64748b]">{label}</dt>
+            <dd className="text-right text-[#111111]">{value}</dd>
+          </div>
+        ))}
+        <div className="flex justify-between gap-3 border-t border-black/5 pt-1.5 text-[13px]">
+          <dt className="text-[#64748b]">Total Return</dt>
+          <dd className="text-right">
+            {unvalued ? (
+              <span className="text-[#64748b]">not yet valued</span>
+            ) : (
+              <>
+                <span className="block" style={{ color: gainColor(gain) }}>
+                  {formatSignedCurrency(gain)}
+                </span>
+                <span
+                  className="block text-[12px]"
+                  style={{ color: gainColor(gainPct) }}
+                >
+                  {formatPercent(gainPct)}
+                </span>
+              </>
+            )}
+          </dd>
+        </div>
+        <div className="flex justify-between gap-3 text-[13px]">
+          <dt className="text-[#64748b]">Annualized</dt>
+          <dd
+            className="text-right"
+            style={{ color: unvalued ? "#64748b" : gainColor(annualized) }}
+          >
+            {unvalued ? "—" : formatPercent(annualized)}
+          </dd>
+        </div>
+      </dl>
+    </div>
+  );
+}
+
 function InvestmentHistoryTable({ rows, totals }) {
   const cell = "px-1.5 py-2 text-right";
 
   return (
-    <section className="rounded-[12px] border border-black/10 bg-white p-6 shadow-[0_10px_30px_rgba(15,61,62,0.06)]">
-      <h2 className="font-display text-[18px] leading-tight text-[#111111]">
+    <section className="min-w-0 rounded-[12px] border border-black/10 bg-white p-4 shadow-[0_10px_30px_rgba(15,61,62,0.06)] md:p-6">
+      <h2 className="font-display text-[16px] leading-tight text-[#111111] md:text-[18px]">
         Investment History
       </h2>
 
-      <div className="mt-4 overflow-x-auto">
+      <div className="mt-3 space-y-2 md:hidden">
+        {rows.map((r) => (
+          <DepositCard key={r.transactionId} row={r} />
+        ))}
+        <DepositCard row={totals} total />
+      </div>
+
+      <div className="mt-4 hidden md:block">
         <table className="w-full text-[13px] tabular-nums">
           <thead className="text-[11px] text-[#64748b]">
             <tr className="border-b border-black/10">
@@ -459,7 +584,7 @@ function ActionTile({ icon: Icon, label, sub, active, primary, onClick }) {
       >
         <Icon className="h-3.5 w-3.5" strokeWidth={1.75} />
       </span>
-      <span className="text-[13px] font-medium leading-tight">{label}</span>
+      <span className="text-[13px] font-medium leading-tight md:text-[13px]">{label}</span>
       <span
         className={`text-[11px] leading-tight ${primary ? "text-white/70" : "text-[#9ca3af]"}`}
       >
@@ -664,13 +789,13 @@ function FundDetailPage() {
     <div className="space-y-5">
       {/* 45/55 rather than even: the left column holds fixed-width tiles and the
           right holds a table, so the extra room is worth more on the right. */}
-      <div className="grid items-start gap-6 lg:grid-cols-[45fr_55fr]">
-        <div className="space-y-4">
-          <section className="rounded-[12px] border border-black/10 bg-white p-6 shadow-[0_10px_30px_rgba(15,61,62,0.06)]">
+      <div className="grid items-start gap-4 md:gap-6 lg:grid-cols-[45fr_55fr]">
+        <div className="min-w-0 space-y-4">
+          <section className="min-w-0 rounded-[12px] border border-black/10 bg-white p-4 md:p-6 shadow-[0_10px_30px_rgba(15,61,62,0.06)]">
             <div className="flex items-start gap-4">
               {/* The mark is already white-on-black, so it needs no inverting
                   here and the tile's own black simply continues it. */}
-              <span className="grid h-14 w-14 shrink-0 overflow-hidden rounded-[14px] bg-black">
+              <span className="grid h-12 w-12 shrink-0 overflow-hidden rounded-[14px] bg-black md:h-14 md:w-14">
                 <img
                   src="/assets/AP.png"
                   alt=""
@@ -678,11 +803,11 @@ function FundDetailPage() {
                 />
               </span>
               <div>
-                <h1 className="font-display text-[28px] leading-tight text-[#111111]">
+                <h1 className="font-display text-[22px] leading-tight text-[#111111] md:text-[28px]">
                   {holding.fundName}
                 </h1>
                 {holding.tagline ? (
-                  <p className="mt-0.5 text-[14px] text-[#64748b]">
+                  <p className="mt-0.5 text-[13px] text-[#64748b] md:text-[14px]">
                     {holding.tagline}
                   </p>
                 ) : null}
@@ -714,7 +839,7 @@ function FundDetailPage() {
             </div>
           </section>
 
-          <div className="grid auto-rows-[100px] grid-cols-4 items-stretch gap-3">
+          <div className="grid auto-rows-[80px] grid-cols-2 items-stretch gap-2 md:auto-rows-[100px] md:grid-cols-4 md:gap-3">
             <ActionTile
               icon={Plus}
               label="Add Capital"
@@ -896,7 +1021,7 @@ function FundDetailPage() {
           ) : null}
         </div>
 
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-4">
           <NavHistoryChart fundCode={code} />
           {breakdown && breakdown.rows.length > 0 ? (
             <InvestmentHistoryTable

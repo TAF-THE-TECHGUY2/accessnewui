@@ -33,11 +33,13 @@ function MetricNote({ children }) {
         <Info className="h-3 w-3" />
       </button>
       {/* Anchored to the icon's left edge and sitting below it, so it opens
-          into the card rather than across the figures either side. z-30 clears
-          the metric row; the row's own box no longer clips it. */}
+          into the card rather than across the figures either side. `hidden`
+          rather than invisible-with-opacity: an absolutely positioned box that
+          is merely transparent still counts toward the document's scroll
+          width, and at 400px this one was pushing the page 170px wide. */}
       <span
         role="tooltip"
-        className="pointer-events-none invisible absolute left-0 top-6 z-30 w-[280px] max-w-[70vw] rounded-[10px] border border-black/10 bg-white p-3 text-[12px] font-normal leading-5 text-[#1f2937] opacity-0 shadow-[0_12px_32px_rgba(15,61,62,0.18)] transition group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100"
+        className="pointer-events-none absolute left-0 top-6 z-30 hidden w-[min(280px,calc(100vw-2rem))] rounded-[10px] border border-black/10 bg-white p-3 text-[12px] font-normal leading-5 text-[#1f2937] shadow-[0_12px_32px_rgba(15,61,62,0.18)] group-hover:block group-focus-within:block"
       >
         {children}
       </span>
@@ -46,28 +48,32 @@ function MetricNote({ children }) {
 }
 
 export function MetricStrip({ metrics, size = "md", cols = 4, className = "" }) {
-  const valueSize = size === "lg" ? "text-[30px]" : "text-[17px]";
+  const valueSize =
+    size === "lg" ? "text-[22px] md:text-[30px]" : "text-[18px] md:text-[17px]";
 
-  // Four across needs a full-width container; in a narrow one the figures
-  // collide. `cols={2}` gives a 2x2 block for the fund detail's left column.
-  // Four across only once there is room for it. Below that the figures collide:
-  // at a 1280px viewport each of four cells is 105px for a value needing 130.
-  // A 2x2 block is the honest fallback, not a smaller font nobody can read.
+  // 2x2 on a phone, where four across would be 80px a cell. Dividers come from
+  // a 1px gap over a tinted background rather than divide-x, which puts a stray
+  // left border on the first cell of the second row in a two-column grid.
   const grid =
     cols === 2
-      ? "grid-cols-1 divide-y sm:grid-cols-2 sm:divide-x [&>*:nth-child(-n+2)]:sm:border-b [&>*:nth-child(-n+2)]:sm:border-black/10 [&>*:nth-child(odd)]:sm:border-l-0"
-      : "grid-cols-1 divide-y sm:grid-cols-2 sm:divide-y-0 sm:divide-x wide:grid-cols-4";
+      ? "grid-cols-2 gap-px bg-black/10"
+      : "grid-cols-2 gap-px bg-black/10 wide:grid-cols-4 wide:gap-0 wide:bg-transparent wide:divide-x wide:divide-black/10";
 
   return (
-    <div className={`grid items-start divide-black/10 ${grid} ${className}`}>
+    <div className={`grid items-stretch wide:items-start ${grid} ${className}`}>
       {metrics.map((m) => (
-        <div key={m.label} className={size === "lg" ? "min-w-0 px-6 py-6" : "min-w-0 px-2 py-3"}>
+        <div
+          key={m.label}
+          className={`min-w-0 bg-white ${
+            size === "lg" ? "px-4 py-4 md:px-6 md:py-6" : "px-3 py-3 md:px-2"
+          }`}
+        >
           {/* Fixed height: the note icon is taller than the label text, and
               without this the cell carrying it pushes its value below the
               other three. */}
           <div className="flex h-4 items-center gap-1.5">
             {m.icon ? (
-              <span className="grid h-7 w-7 place-items-center rounded-full border border-black/10 text-[#0f3d3e]">
+              <span className="hidden h-7 w-7 place-items-center rounded-full border border-black/10 text-[#0f3d3e] md:grid">
                 <m.icon className="h-3.5 w-3.5" />
               </span>
             ) : null}
@@ -77,14 +83,14 @@ export function MetricStrip({ metrics, size = "md", cols = 4, className = "" }) 
             {m.note ? <MetricNote>{m.note}</MetricNote> : null}
           </div>
           <p
-            className={`font-display mt-2 ${valueSize} whitespace-nowrap leading-none tabular-nums`}
+            className={`font-display mt-2 ${valueSize} leading-none tabular-nums md:whitespace-nowrap`}
             style={{ color: m.color ?? "#111111" }}
           >
             {m.value}
           </p>
           {m.sub ? (
             <p
-              className="mt-1.5 text-[12px]"
+              className="mt-1.5 text-[11px] md:text-[12px]"
               style={{ color: m.subColor ?? "#9ca3af" }}
             >
               {m.sub}
@@ -147,13 +153,20 @@ export function AttributeRows({ fund }) {
 
   return (
     <div className="divide-y divide-black/5">
+      {/* Rows wrap rather than overflow: on a narrow screen a long value used
+          to be pushed past the right edge and disappear entirely. */}
       {rows.map(({ icon: Icon, label, value }) => (
-        <div key={label} className="flex items-center justify-between gap-4 py-3.5">
-          <span className="flex items-center gap-3 text-[14px] text-[#111111]">
-            <Icon className="h-4 w-4 text-[#111111]" strokeWidth={1.5} />
+        <div
+          key={label}
+          className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 py-3 md:py-3.5"
+        >
+          <span className="flex min-w-0 items-center gap-3 text-[13px] text-[#111111] md:text-[14px]">
+            <Icon className="h-4 w-4 shrink-0 text-[#111111]" strokeWidth={1.5} />
             {label}
           </span>
-          <span className="text-right text-[14px] text-[#64748b]">{value}</span>
+          <span className="min-w-0 break-words text-left text-[13px] text-[#64748b] md:text-right md:text-[14px]">
+            {value}
+          </span>
         </div>
       ))}
     </div>

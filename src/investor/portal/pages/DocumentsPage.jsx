@@ -148,7 +148,9 @@ function DocumentTitle({ doc }) {
               Personal
             </span>
           ) : null}
-          {formatBytes(doc.sizeBytes) ? <span>{formatBytes(doc.sizeBytes)}</span> : null}
+          {formatBytes(doc.sizeBytes) ? (
+            <span>{formatBytes(doc.sizeBytes)}</span>
+          ) : null}
         </p>
       </div>
     </div>
@@ -272,23 +274,36 @@ function CategorySection({ category, docs, filtered, open, onToggle }) {
               </div>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[620px] text-sm">
-                <thead className="text-[11px] uppercase tracking-[0.1em] text-[#64748b]">
-                  <tr>
-                    <th className="px-4 py-2 text-left font-medium">Document</th>
-                    <th className="px-4 py-2 text-left font-medium">Date</th>
-                    <th className="px-4 py-2 text-left font-medium">Type</th>
-                    <th className="px-4 py-2" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((doc) => (
-                    <DocumentTableRow key={doc.id} doc={doc} />
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <>
+              {/* The same rows as a list below md: a four-column table and a
+                  400px screen do not mix, and a sideways-scrolling table hides
+                  the View and Download controls off the right edge. */}
+              <ul className="space-y-2 md:hidden">
+                {filtered.map((doc) => (
+                  <DocumentRow key={doc.id} doc={doc} />
+                ))}
+              </ul>
+
+              <div className="hidden overflow-x-auto md:block">
+                <table className="w-full min-w-[620px] text-sm">
+                  <thead className="text-[11px] uppercase tracking-[0.1em] text-[#64748b]">
+                    <tr>
+                      <th className="px-4 py-2 text-left font-medium">
+                        Document
+                      </th>
+                      <th className="px-4 py-2 text-left font-medium">Date</th>
+                      <th className="px-4 py-2 text-left font-medium">Type</th>
+                      <th className="px-4 py-2" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtered.map((doc) => (
+                      <DocumentTableRow key={doc.id} doc={doc} />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
       ) : null}
@@ -337,10 +352,7 @@ function DocumentsPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const all = useMemo(
-    () => CATEGORIES.flatMap((c) => docs?.[c] || []),
-    [docs],
-  );
+  const all = useMemo(() => CATEGORIES.flatMap((c) => docs?.[c] || []), [docs]);
 
   // Years and types come from what was actually returned. A hardcoded list
   // offers filters that match nothing, and omits a year the moment one is added.
@@ -354,7 +366,11 @@ function DocumentsPage() {
 
   const types = useMemo(
     () =>
-      [...new Set(all.map((d) => typeLabel(d.mimeType)).filter((t) => t !== "—"))]
+      [
+        ...new Set(
+          all.map((d) => typeLabel(d.mimeType)).filter((t) => t !== "—"),
+        ),
+      ]
         .sort()
         .map((t) => ({ value: t, label: t })),
     [all],
@@ -363,7 +379,8 @@ function DocumentsPage() {
   const matches = (doc) => {
     const q = query.trim().toLowerCase();
     if (q) {
-      const haystack = `${doc.title || ""} ${doc.subcategory || ""}`.toLowerCase();
+      const haystack =
+        `${doc.title || ""} ${doc.subcategory || ""}`.toLowerCase();
       if (!haystack.includes(q)) return false;
     }
     if (year && yearOf(doc.documentDatedAt) !== year) return false;
@@ -404,8 +421,18 @@ function DocumentsPage() {
             label: CATEGORY_META[c].label,
           }))}
         />
-        <Select label="All years" value={year} onChange={setYear} options={years} />
-        <Select label="All types" value={type} onChange={setType} options={types} />
+        <Select
+          label="All years"
+          value={year}
+          onChange={setYear}
+          options={years}
+        />
+        <Select
+          label="All types"
+          value={type}
+          onChange={setType}
+          options={types}
+        />
       </div>
 
       {shown.map((cat) => {
