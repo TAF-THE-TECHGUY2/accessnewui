@@ -78,7 +78,7 @@ function PortalLayout({ investor, setInvestor }) {
         </div>
       </header>
 
-      <main className="mx-auto max-w-[1400px] px-6 py-8">
+      <main className="mx-auto max-w-[1400px] px-8 py-6">
         <Outlet context={{ investor, setInvestor }} />
       </main>
     </div>

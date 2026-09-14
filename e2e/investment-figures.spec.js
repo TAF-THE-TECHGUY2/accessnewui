@@ -51,6 +51,7 @@ const INVESTMENTS = [
     date: "2023-01-30",
     expect: {
       unitPrice: "10.000000",
+      unitPriceShort: "10.00",
       unitsValue: "160,325.00",
       gain: "39,325.00",
       gainPct: "32.50%",
@@ -64,6 +65,7 @@ const INVESTMENTS = [
     date: "2023-03-31",
     expect: {
       unitPrice: "10.008152",
+      unitPriceShort: "10.01",
       unitsValue: "535,300.00",
       gain: "130,970.66",
       gainPct: "32.39%",
@@ -77,6 +79,7 @@ const INVESTMENTS = [
     date: "2023-05-01",
     expect: {
       unitPrice: "10.028164",
+      unitPriceShort: "10.03",
       unitsValue: "66,250.00",
       gain: "16,109.18",
       gainPct: "32.13%",
@@ -281,15 +284,18 @@ test.describe("Investment figures, end to end through the UI", () => {
     await expect(body).toContainText(TOTALS.gainPct);
     await expect(body).toContainText(TOTALS.annualized);
 
-    // Per-investment table: the price and value of every row.
+    // Per-investment table. Purchase price renders at two decimals to match
+    // the design; the three prices stay distinct at that precision, and the
+    // full figure is on the cell's title attribute.
     for (const inv of INVESTMENTS) {
-      await expect(body).toContainText(inv.expect.unitPrice);
+      await expect(body).toContainText(inv.expect.unitPriceShort);
       await expect(body).toContainText(inv.expect.unitsValue);
       await expect(body).toContainText(inv.expect.gain);
-      await expect(body).toContainText(inv.expect.years);
     }
 
-    // The weighted average that deliberately differs from his sheet.
+    // Years held lost its column to the design's eight, so the two figures the
+    // fund manager reconciles against live in the Total row instead — the
+    // weighted average price at full precision, and the units-weighted period.
     await expect(body).toContainText(TOTALS.weightedAverageUnitPrice);
     await expect(body).toContainText(TOTALS.wahp);
 

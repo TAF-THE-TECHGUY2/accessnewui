@@ -10,14 +10,13 @@ import {
 } from "recharts";
 import {
   AlertTriangle,
-  ArrowLeft,
   DollarSign,
   Info,
   Percent,
   Plus,
   TrendingUp,
 } from "lucide-react";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 
 import {
   fetchBreakdown,
@@ -55,78 +54,52 @@ import { Unvalued } from "./InvestmentPage";
  * charged: a 5% premium on top of book value is 5/105 of what was actually paid.
  * Both figures are shown so the two reconcile.
  */
-function PremiumNotice({ holding }) {
+function PremiumNote({ holding }) {
   // null is not zero. The API sends null when any deposit has no published book
   // value to compare against, and treating that as 0 is what fabricated a
   // "$7.90 book value plus a 26.8% entry premium" against a real $10.01 entry.
+  const entry =
+    holding.entryPrice != null ? `$${holding.entryPrice.toFixed(4)}` : "—";
+
   if (holding.premiumPaid == null || holding.entryBookValue == null) {
     return (
-      <div className="mt-5 flex items-start gap-3 rounded-[14px] border border-black/10 bg-[#f7f5f1] p-4">
-        <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#6b7280]" />
-        <div className="text-[13px] leading-6 text-[#1f2937]">
-          <p>
-            You entered at{" "}
-            <strong>
-              $
-              {holding.entryPrice != null ? holding.entryPrice.toFixed(4) : "—"}
-            </strong>{" "}
-            per unit.
-          </p>
-          <p className="mt-1.5 text-[#4b5563]">
-            One or more of your deposits has no published book value for its
-            date, so there is no book value to compare that entry price against.
-            Your units, contributions and current value above are unaffected.
-          </p>
-        </div>
-      </div>
+      <>
+        <p>
+          You entered at <strong>{entry}</strong> per unit.
+        </p>
+        <p className="mt-1.5">
+          One or more of your deposits has no published book value for its date,
+          so there is nothing to compare that entry price against. Your units,
+          contributions and current value are unaffected.
+        </p>
+      </>
     );
   }
 
-  const premiumPaid = holding.premiumPaid;
-
-  if (premiumPaid <= 0) {
-    return null;
+  if (holding.premiumPaid <= 0) {
+    return (
+      <p>
+        You entered at <strong>{entry}</strong> per unit, at the book value
+        ruling on your deposit dates.
+      </p>
+    );
   }
 
-  const stillRecovering = holding.gainLoss < 0;
-
   return (
-    <div
-      className={`mt-5 flex items-start gap-3 rounded-[14px] border p-4 ${
-        stillRecovering
-          ? "border-amber-200 bg-amber-50"
-          : "border-black/10 bg-[#f7f5f1]"
-      }`}
-    >
-      <Info
-        className={`mt-0.5 h-4 w-4 shrink-0 ${
-          stillRecovering ? "text-amber-700" : "text-[#6b7280]"
-        }`}
-      />
-      <div className="text-[13px] leading-6 text-[#1f2937]">
-        <p>
-          You entered at{" "}
-          <strong>${(holding.entryPrice ?? 0).toFixed(2)}</strong> per unit —
-          the <strong>${holding.entryBookValue.toFixed(2)}</strong> book value
-          plus a{" "}
-          <strong>{(holding.premiumPct ?? 0).toFixed(1)}% entry premium</strong>{" "}
-          of {formatCurrencyDetailed(premiumPaid)}.
-        </p>
-        {stillRecovering ? (
-          <p className="mt-1.5 text-[#4b5563]">
-            Your position shows a paper loss because the premium is not yet
-            recovered. This is expected — the premium reflects entering an
-            established portfolio, and is typically recovered through
-            appreciation and distributions.
-          </p>
-        ) : (
-          <p className="mt-1.5 text-[#4b5563]">
-            That premium has been recovered — your position is above what you
-            paid.
-          </p>
-        )}
-      </div>
-    </div>
+    <>
+      <p>
+        You entered at <strong>${(holding.entryPrice ?? 0).toFixed(2)}</strong>{" "}
+        per unit — the{" "}
+        <strong>${holding.entryBookValue.toFixed(2)}</strong> book value plus a{" "}
+        <strong>{(holding.premiumPct ?? 0).toFixed(1)}% entry premium</strong> of{" "}
+        {formatCurrencyDetailed(holding.premiumPaid)}.
+      </p>
+      <p className="mt-1.5">
+        {holding.gainLoss < 0
+          ? "Your position shows a paper loss because the premium is not yet recovered. That is expected — it reflects entering an established portfolio."
+          : "That premium has been recovered — your position is above what you paid."}
+      </p>
+    </>
   );
 }
 
@@ -168,10 +141,22 @@ function NavHistoryChart({ fundCode }) {
 
   const latest = data.length > 0 ? data[data.length - 1].price : null;
 
+  // March and September of each year, plus whatever the series ends on. Left to
+  // itself the axis drops labels unevenly as the series grows; naming them keeps
+  // the spacing regular and the last quarter always visible.
+  const ticks = useMemo(() => {
+    const wanted = data
+      .filter((d) => /^(3|9)\//.test(d.label))
+      .map((d) => d.label);
+    const last = data.at(-1)?.label;
+
+    return last && !wanted.includes(last) ? [...wanted, last] : wanted;
+  }, [data]);
+
   return (
-    <section className="rounded-[22px] border border-black/10 bg-white p-6 shadow-[0_10px_30px_rgba(15,61,62,0.06)]">
+    <section className="rounded-[12px] border border-black/10 bg-white p-6 shadow-[0_10px_30px_rgba(15,61,62,0.06)]">
       <div className="flex items-start justify-between gap-4">
-        <h2 className="font-display text-[22px] leading-tight text-[#111111]">
+        <h2 className="font-display text-[20px] leading-tight text-[#111111]">
           NAV Per Unit History
         </h2>
         {latest != null ? (
@@ -181,20 +166,20 @@ function NavHistoryChart({ fundCode }) {
         ) : null}
       </div>
 
-      <div className="mt-5 h-[300px]">
+      <div className="mt-4 h-[260px]">
         {points == null ? (
-          <p className="grid h-full place-items-center text-sm text-[#6b7280]">
+          <p className="grid h-full place-items-center text-[13px] text-[#6b7280]">
             Loading…
           </p>
         ) : data.length === 0 ? (
-          <p className="grid h-full place-items-center text-sm text-[#6b7280]">
+          <p className="grid h-full place-items-center text-[13px] text-[#6b7280]">
             No unit values published yet.
           </p>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
               data={data}
-              margin={{ top: 8, right: 16, left: 0, bottom: 0 }}
+              margin={{ top: 8, right: 28, left: 0, bottom: 0 }}
             >
               <CartesianGrid
                 stroke="#e5e7eb"
@@ -206,20 +191,27 @@ function NavHistoryChart({ fundCode }) {
                 tick={{ fontSize: 11, fill: "#6b7280" }}
                 axisLine={false}
                 tickLine={false}
-                interval="preserveStartEnd"
-                minTickGap={28}
+                ticks={ticks}
+                interval={0}
               />
               <YAxis
                 tick={{ fontSize: 11, fill: "#6b7280" }}
                 axisLine={false}
                 tickLine={false}
-                domain={["auto", "auto"]}
+                // Fixed rather than fitted to the data: a domain that moves with
+                // the series makes two quarters' charts incomparable, and the
+                // whole-number ticks give the gridlines a readable step.
+                domain={[8, 14]}
+                ticks={[8, 9, 10, 11, 12, 13, 14]}
                 tickFormatter={(v) => v.toFixed(1)}
-                width={44}
+                width={40}
               />
               <Tooltip
+                // No crosshair: the default vertical cursor line reads as a
+                // pinned annotation once the pointer has been anywhere near it.
+                cursor={false}
                 contentStyle={{
-                  borderRadius: 12,
+                  borderRadius: 8,
                   border: "1px solid rgba(0,0,0,0.1)",
                   fontSize: 12,
                 }}
@@ -231,9 +223,20 @@ function NavHistoryChart({ fundCode }) {
                 stroke="#000000"
                 strokeWidth={2}
                 fill="none"
+                isAnimationActive={false}
                 // Only the newest point is marked; a dot on every quarter turns
                 // the series into a scatter and hides the shape.
-                dot={false}
+                dot={(dot) =>
+                  dot.index === data.length - 1 ? (
+                    <circle
+                      key={dot.index}
+                      cx={dot.cx}
+                      cy={dot.cy}
+                      r={4}
+                      fill="#000000"
+                    />
+                  ) : null
+                }
                 activeDot={{ r: 4, fill: "#000000" }}
               />
             </LineChart>
@@ -264,60 +267,58 @@ function NavHistoryChart({ fundCode }) {
  * Those two columns are what the fund manager reconciles against his workbook.
  */
 function InvestmentHistoryTable({ rows, totals }) {
+  const cell = "px-2 py-3 text-right";
+
   return (
-    <section className="rounded-[22px] border border-black/10 bg-white p-6 shadow-[0_10px_30px_rgba(15,61,62,0.06)]">
-      <h2 className="font-display text-[22px] leading-tight text-[#111111]">
+    <section className="rounded-[12px] border border-black/10 bg-white p-6 shadow-[0_10px_30px_rgba(15,61,62,0.06)]">
+      <h2 className="font-display text-[20px] leading-tight text-[#111111]">
         Investment History
       </h2>
 
-      <div className="mt-5 overflow-x-auto">
-        <table className="w-full min-w-[820px] text-sm tabular-nums">
-          <thead className="text-[11px] uppercase tracking-[0.08em] text-[#64748b]">
+      <div className="mt-4 overflow-x-auto">
+        <table className="w-full min-w-[640px] text-[13px] tabular-nums">
+          <thead className="text-[10px] uppercase tracking-[0.06em] text-[#64748b]">
             <tr className="border-b border-black/10">
-              <th className="px-2 py-3 text-left font-medium">Deposit Date</th>
-              <th className="px-2 py-3 text-right font-medium">
-                Amount Invested
-              </th>
-              <th className="px-2 py-3 text-right font-medium">%</th>
-              <th className="px-2 py-3 text-right font-medium">Units Held</th>
-              <th className="px-2 py-3 text-right font-medium">
-                Purchase Price
-              </th>
-              <th className="px-2 py-3 text-right font-medium">
-                Current Value
-              </th>
-              <th className="px-2 py-3 text-right font-medium">Total Return</th>
-              <th className="px-2 py-3 text-right font-medium">Years Held</th>
-              <th className="px-2 py-3 text-right font-medium">Annualized</th>
+              <th className="px-2 py-2 text-left font-medium">Deposit Date</th>
+              <th className="px-2 py-2 text-right font-medium">Amount Invested</th>
+              <th className="px-2 py-2 text-right font-medium">%</th>
+              <th className="px-2 py-2 text-right font-medium">Units Held</th>
+              <th className="px-2 py-2 text-right font-medium">Purchase Price</th>
+              <th className="px-2 py-2 text-right font-medium">Current Value</th>
+              <th className="px-2 py-2 text-right font-medium">Total Return</th>
+              <th className="px-2 py-2 text-right font-medium">Annualized</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((r) => (
               <tr key={r.transactionId} className="border-b border-black/5">
-                <td className="px-2 py-4 text-left text-[#111111]">
+                <td className="whitespace-nowrap px-2 py-3 text-left text-[#111111]">
                   {r.depositDate}
-                  {r.dateOaMipaSigned ? (
-                    <span className="block text-[11px] text-[#9ca3af]">
-                      signed {r.dateOaMipaSigned}
-                    </span>
-                  ) : null}
                 </td>
-                <td className="px-2 py-4 text-right text-[#111111]">
+                <td className={`${cell} text-[#111111]`}>
                   {formatCurrencyDetailed(r.contribution)}
                 </td>
-                <td className="px-2 py-4 text-right text-[#64748b]">
+                <td className={`${cell} text-[#64748b]`}>
                   {r.contributionPct.toFixed(2)}%
                 </td>
-                <td className="px-2 py-4 text-right text-[#111111]">
+                <td className={`${cell} text-[#111111]`}>
                   {formatUnits(r.units)}
                 </td>
-                <td className="px-2 py-4 text-right text-[#111111]">
-                  {formatPrice(r.unitPrice)}
+                {/* Two decimals, as the design has it. The three purchase
+                    prices stay distinct at that precision — $10.00, $10.01 and
+                    $10.03 — so nothing is lost here. The weighted average in
+                    the Total row does collide with a row at two decimals, so
+                    that one keeps its own. */}
+                <td
+                  className={`${cell} text-[#111111]`}
+                  title={formatPrice(r.unitPrice)}
+                >
+                  {formatCurrencyDetailed(r.unitPrice)}
                 </td>
-                <td className="px-2 py-4 text-right text-[#111111]">
+                <td className={`${cell} text-[#111111]`}>
                   {formatCurrencyDetailed(r.unitsValue)}
                 </td>
-                <td className="px-2 py-4 text-right">
+                <td className={cell}>
                   {r.valuedAtDeposit ? (
                     <span className="block text-[#64748b]">not yet valued</span>
                   ) : (
@@ -329,7 +330,7 @@ function InvestmentHistoryTable({ rows, totals }) {
                         {formatSignedCurrency(r.gain)}
                       </span>
                       <span
-                        className="block text-[12px]"
+                        className="block text-[11px]"
                         style={{ color: gainColor(r.gainPct) }}
                       >
                         {formatPercent(r.gainPct)}
@@ -337,16 +338,18 @@ function InvestmentHistoryTable({ rows, totals }) {
                     </>
                   )}
                 </td>
-                <td className="px-2 py-4 text-right text-[#64748b]">
-                  {r.valuedAtDeposit ? "—" : r.holdingYears.toFixed(4)}
-                </td>
                 <td
-                  className="px-2 py-4 text-right"
+                  className={cell}
                   style={{
                     color: r.valuedAtDeposit
                       ? "#64748b"
                       : gainColor(r.annualizedReturnPct),
                   }}
+                  title={
+                    r.valuedAtDeposit
+                      ? undefined
+                      : `over ${r.holdingYears.toFixed(4)} years held`
+                  }
                 >
                   {r.valuedAtDeposit
                     ? "—"
@@ -356,31 +359,34 @@ function InvestmentHistoryTable({ rows, totals }) {
             ))}
           </tbody>
           <tfoot className="font-semibold">
-            <tr>
-              <td className="px-2 py-4 text-left text-[#111111]">
+            <tr className="border-t border-black/20">
+              <td className="px-2 py-3 text-left text-[#111111]">
                 Total
-                <span className="block text-[11px] font-normal text-[#9ca3af]">
+                <span className="block text-[10px] font-normal text-[#9ca3af]">
                   {totals.investmentCount} investment
                   {totals.investmentCount === 1 ? "" : "s"}
                 </span>
               </td>
-              <td className="px-2 py-4 text-right text-[#111111]">
+              <td className={`${cell} text-[#111111]`}>
                 {formatCurrencyDetailed(totals.contribution)}
               </td>
-              <td className="px-2 py-4 text-right text-[#64748b]">100.00%</td>
-              <td className="px-2 py-4 text-right text-[#111111]">
+              <td className={`${cell} text-[#64748b]`}>100.00%</td>
+              <td className={`${cell} text-[#111111]`}>
                 {formatUnits(totals.units)}
               </td>
-              <td className="px-2 py-4 text-right text-[#111111]">
-                {formatPrice(totals.weightedAverageUnitPrice)}
-                <span className="block text-[11px] font-normal text-[#9ca3af]">
-                  weighted avg
+              <td className={`${cell} text-[#111111]`}>
+                {formatCurrencyDetailed(totals.weightedAverageUnitPrice)}
+                {/* The full precision the fund manager reconciles against: at
+                    two decimals this is indistinguishable from a single
+                    deposit's price. */}
+                <span className="block whitespace-nowrap text-[10px] font-normal text-[#9ca3af]">
+                  {formatPrice(totals.weightedAverageUnitPrice)}
                 </span>
               </td>
-              <td className="px-2 py-4 text-right text-[#111111]">
+              <td className={`${cell} text-[#111111]`}>
                 {formatCurrencyDetailed(totals.unitsValue)}
               </td>
-              <td className="px-2 py-4 text-right">
+              <td className={cell}>
                 <span
                   className="block"
                   style={{ color: gainColor(totals.gain) }}
@@ -388,23 +394,23 @@ function InvestmentHistoryTable({ rows, totals }) {
                   {formatSignedCurrency(totals.gain)}
                 </span>
                 <span
-                  className="block text-[12px]"
+                  className="block text-[11px]"
                   style={{ color: gainColor(totals.gainPct) }}
                 >
                   {formatPercent(totals.gainPct)}
                 </span>
               </td>
-              <td className="px-2 py-4 text-right text-[#64748b]">
-                {totals.weightedAverageHoldingPeriodYears.toFixed(4)}
-                <span className="block text-[11px] font-normal text-[#9ca3af]">
-                  units-weighted
-                </span>
-              </td>
               <td
-                className="px-2 py-4 text-right"
+                className={cell}
                 style={{ color: gainColor(totals.annualizedReturnPct) }}
               >
                 {formatPercent(totals.annualizedReturnPct)}
+                {/* Years held lost its column to the design's eight. The
+                    units-weighted figure is the one that is reconciled, so it
+                    keeps a home here rather than disappearing. */}
+                <span className="block whitespace-nowrap text-[10px] font-normal text-[#9ca3af]">
+                  {totals.weightedAverageHoldingPeriodYears.toFixed(4)} yrs held
+                </span>
               </td>
             </tr>
           </tfoot>
@@ -412,20 +418,16 @@ function InvestmentHistoryTable({ rows, totals }) {
       </div>
 
       {totals.hasUnvaluedDeposits ? (
-        <p className="mt-4 flex items-start gap-2 rounded-[12px] border border-amber-200 bg-amber-50 px-4 py-3 text-[12px] leading-5 text-amber-900">
+        <p className="mt-3 flex items-start gap-2 rounded-[8px] border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] leading-5 text-amber-900">
           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          One or more deposits was made after {totals.unitValueAsOf}, the date
-          of the latest published unit price. Those units did not exist on that
-          date, so they cannot be valued yet and show no return. They will be
-          valued at the next published price.
+          One or more deposits was made after {totals.unitValueAsOf}, the date of
+          the latest published unit price, so those units cannot be valued yet.
         </p>
       ) : null}
 
-      <p className="mt-4 text-[12px] leading-5 text-[#6b7280]">
+      <p className="mt-3 text-[11px] leading-5 text-[#6b7280]">
         Purchase price is your contribution divided by the units it bought.
-        Holding periods run from the deposit date to {totals.unitValueAsOf}{" "}
-        using a 365.25-day year. The weighted average holding period is weighted
-        by units held.
+        Holding periods run to {totals.unitValueAsOf} using a 365.25-day year.
       </p>
     </section>
   );
@@ -437,7 +439,7 @@ function ActionTile({ icon: Icon, label, sub, active, primary, onClick }) {
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`flex flex-col items-center gap-2 rounded-[18px] border px-3 py-5 text-center transition ${
+      className={`flex h-[100px] flex-col items-center justify-center gap-1.5 rounded-[12px] border px-2 text-center transition ${
         primary
           ? "border-black bg-black text-white hover:bg-[#1f2937]"
           : active
@@ -446,15 +448,15 @@ function ActionTile({ icon: Icon, label, sub, active, primary, onClick }) {
       }`}
     >
       <span
-        className={`grid h-10 w-10 place-items-center rounded-full border ${
+        className={`grid h-8 w-8 place-items-center rounded-full border ${
           primary ? "border-white/40" : "border-black/15"
         }`}
       >
-        <Icon className="h-4 w-4" strokeWidth={1.75} />
+        <Icon className="h-3.5 w-3.5" strokeWidth={1.75} />
       </span>
-      <span className="text-[13px] font-medium">{label}</span>
+      <span className="text-[13px] font-medium leading-tight">{label}</span>
       <span
-        className={`text-[12px] ${primary ? "text-white/70" : "text-[#9ca3af]"}`}
+        className={`text-[11px] leading-tight ${primary ? "text-white/70" : "text-[#9ca3af]"}`}
       >
         {sub}
       </span>
@@ -592,7 +594,7 @@ function FundDetailPage() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [panel, setPanel] = useState("holdings");
+  const [panel, setPanel] = useState(null);
 
   const load = () =>
     Promise.all([
@@ -643,7 +645,6 @@ function FundDetailPage() {
   if (!holding) {
     return (
       <div className="space-y-4">
-        <BackLink />
         <p className="text-sm text-[#6b7280]">
           You don&rsquo;t hold a fund with the code {code}.
         </p>
@@ -655,16 +656,16 @@ function FundDetailPage() {
     fees.aumRatePct != null ? `${fees.aumRatePct.toFixed(2)}% AUM` : "—";
 
   return (
-    <div className="space-y-6">
-      <BackLink />
-
-      <div className="grid items-start gap-6 lg:grid-cols-2">
-        <div className="space-y-6">
-          <section className="rounded-[22px] border border-black/10 bg-white p-6 shadow-[0_10px_30px_rgba(15,61,62,0.06)]">
+    <div className="space-y-5">
+      {/* 45/55 rather than even: the left column holds fixed-width tiles and the
+          right holds a table, so the extra room is worth more on the right. */}
+      <div className="grid items-start gap-6 lg:grid-cols-[45fr_55fr]">
+        <div className="space-y-4">
+          <section className="rounded-[12px] border border-black/10 bg-white p-6 shadow-[0_10px_30px_rgba(15,61,62,0.06)]">
             <div className="flex items-start gap-4">
               {/* The mark is already white-on-black, so it needs no inverting
                   here and the tile's own black simply continues it. */}
-              <span className="grid h-16 w-16 shrink-0 overflow-hidden rounded-[18px] bg-black">
+              <span className="grid h-14 w-14 shrink-0 overflow-hidden rounded-[14px] bg-black">
                 <img
                   src="/assets/AP.png"
                   alt=""
@@ -672,11 +673,11 @@ function FundDetailPage() {
                 />
               </span>
               <div>
-                <h1 className="font-display text-[23px] leading-tight text-[#111111]">
+                <h1 className="font-display text-[28px] leading-tight text-[#111111]">
                   {holding.fundName}
                 </h1>
                 {holding.tagline ? (
-                  <p className="mt-1 text-[14px] text-[#64748b]">
+                  <p className="mt-0.5 text-[14px] text-[#64748b]">
                     {holding.tagline}
                   </p>
                 ) : null}
@@ -684,11 +685,18 @@ function FundDetailPage() {
             </div>
 
             {breakdown ? (
-              <div className="mt-6 overflow-hidden rounded-[16px] border border-black/10">
-                <MetricStrip metrics={portfolioMetrics(breakdown.totals)} />
+              <div className="mt-5 overflow-hidden rounded-[12px] border border-black/10">
+                <MetricStrip
+                  metrics={portfolioMetrics(breakdown.totals, {
+                    // The entry-price disclosure moves off the card and onto the
+                    // figure it qualifies, so it stops competing with the
+                    // attribute rows for the same space.
+                    currentValueNote: <PremiumNote holding={holding} />,
+                  })}
+                />
               </div>
             ) : (
-              <div className="mt-6">
+              <div className="mt-5">
                 <Unvalued
                   message={unvaluedMessage}
                   fundName={holding.fundName}
@@ -696,14 +704,12 @@ function FundDetailPage() {
               </div>
             )}
 
-            <div className="mt-4">
+            <div className="mt-4 rounded-[12px] border border-black/10 px-4">
               <AttributeRows fund={holding} />
             </div>
-
-            <PremiumNotice holding={holding} />
           </section>
 
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <div className="grid grid-cols-4 gap-3">
             <ActionTile
               icon={Plus}
               label="Add Capital"
@@ -715,7 +721,7 @@ function FundDetailPage() {
             <ActionTile
               icon={TrendingUp}
               label="View Holdings"
-              sub={`${formatUnits(holding.totalUnits)} units`}
+              sub="–"
               active={panel === "holdings"}
               onClick={() => setPanel("holdings")}
             />
@@ -736,29 +742,28 @@ function FundDetailPage() {
           </div>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-4">
           <NavHistoryChart fundCode={code} />
+          {breakdown && breakdown.rows.length > 0 ? (
+            <InvestmentHistoryTable
+              rows={breakdown.rows}
+              totals={breakdown.totals}
+            />
+          ) : null}
         </div>
       </div>
 
-      {/* Full width, below the two columns, rather than beside the chart as
-          the reference design has it.
-
-          The design's right column is 614px and fits its eight columns at a
-          two-decimal purchase price. This table carries nine, with the price to
-          six decimals and the years held — the two figures the fund manager
-          reconciles against his workbook — and needs 842px. In the right column
-          it clipped Total Return and Annualized behind a scrollbar, which hides
-          the two columns an investor looks for first. Everything else on this
-          page follows the design exactly. */}
-      {breakdown && breakdown.rows.length > 0 ? (
-        <InvestmentHistoryTable
-          rows={breakdown.rows}
-          totals={breakdown.totals}
-        />
-      ) : null}
-
-      <section className="rounded-[22px] border border-black/10 bg-white p-6 shadow-[0_10px_30px_rgba(15,61,62,0.06)]">
+      {panel ? (
+        <section className="rounded-[12px] border border-black/10 bg-white p-6 shadow-[0_10px_30px_rgba(15,61,62,0.06)]">
+          <div className="mb-4 flex justify-end">
+            <button
+              type="button"
+              onClick={() => setPanel(null)}
+              className="text-[13px] text-[#6b7280] transition hover:text-[#111111]"
+            >
+              Close
+            </button>
+          </div>
         {panel === "invest" ? (
           <InvestMorePanel fundName={holding.fundName} onFunded={load} />
         ) : null}
@@ -889,19 +894,9 @@ function FundDetailPage() {
             </div>
           </>
         ) : null}
-      </section>
+        </section>
+      ) : null}
     </div>
-  );
-}
-
-function BackLink() {
-  return (
-    <Link
-      to="/dashboard"
-      className="inline-flex items-center gap-1.5 text-sm text-[#6b7280] transition hover:text-[#111111]"
-    >
-      <ArrowLeft className="h-3.5 w-3.5" /> Back to your funds
-    </Link>
   );
 }
 

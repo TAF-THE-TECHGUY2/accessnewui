@@ -1,4 +1,4 @@
-import { Building2, Layers, MapPin, Target } from "lucide-react";
+import { Building2, Info, Layers, MapPin, Target } from "lucide-react";
 
 import {
   formatCurrencyDetailed,
@@ -15,8 +15,35 @@ import {
  * identically in all three, so it is one component with a size variant rather
  * than three near-copies.
  */
+/**
+ * A disclosure attached to the figure it qualifies.
+ *
+ * Group-hover and focus-within rather than a click: it is an explanation of a
+ * number already on screen, not a control, and it must be reachable by keyboard
+ * as well as pointer.
+ */
+function MetricNote({ children }) {
+  return (
+    <span className="group relative inline-flex">
+      <button
+        type="button"
+        aria-label="About this figure"
+        className="grid h-4 w-4 place-items-center rounded-full text-[#9ca3af] transition hover:text-[#4b5563] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0f3d3e]"
+      >
+        <Info className="h-3.5 w-3.5" />
+      </button>
+      <span
+        role="tooltip"
+        className="pointer-events-none invisible absolute left-1/2 top-6 z-20 w-[260px] -translate-x-1/2 rounded-[10px] border border-black/10 bg-white p-3 text-[12px] font-normal leading-5 text-[#1f2937] opacity-0 shadow-[0_10px_30px_rgba(15,61,62,0.14)] transition group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100"
+      >
+        {children}
+      </span>
+    </span>
+  );
+}
+
 export function MetricStrip({ metrics, size = "md", cols = 4, className = "" }) {
-  const valueSize = size === "lg" ? "text-[32px]" : "text-[20px]";
+  const valueSize = size === "lg" ? "text-[30px]" : "text-[17px]";
 
   // Four across needs a full-width container; in a narrow one the figures
   // collide. `cols={2}` gives a 2x2 block for the fund detail's left column.
@@ -28,14 +55,17 @@ export function MetricStrip({ metrics, size = "md", cols = 4, className = "" }) 
   return (
     <div className={`grid divide-black/10 ${grid} ${className}`}>
       {metrics.map((m) => (
-        <div key={m.label} className={size === "lg" ? "px-6 py-6" : "px-5 py-4"}>
+        <div key={m.label} className={size === "lg" ? "px-6 py-6" : "px-3 py-3"}>
           <div className="flex items-center gap-2">
             {m.icon ? (
               <span className="grid h-7 w-7 place-items-center rounded-full border border-black/10 text-[#0f3d3e]">
                 <m.icon className="h-3.5 w-3.5" />
               </span>
             ) : null}
-            <span className="text-[13px] text-[#4b5563]">{m.label}</span>
+            <span className="text-[13px] leading-tight text-[#4b5563]">
+              {m.label}
+            </span>
+            {m.note ? <MetricNote>{m.note}</MetricNote> : null}
           </div>
           <p
             className={`font-display mt-2 ${valueSize} whitespace-nowrap leading-none tabular-nums`}
@@ -61,7 +91,7 @@ export function MetricStrip({ metrics, size = "md", cols = 4, className = "" }) 
  * Builds the four metrics both fund screens show, from one breakdown payload,
  * so the overview and the detail page cannot drift apart.
  */
-export function portfolioMetrics(totals) {
+export function portfolioMetrics(totals, { currentValueNote } = {}) {
   return [
     {
       label: "Amount Invested",
@@ -72,6 +102,7 @@ export function portfolioMetrics(totals) {
       label: "Current Value",
       value: formatCurrencyDetailed(totals.unitsValue),
       sub: formatDateNumeric(totals.unitValueAsOf),
+      note: currentValueNote,
     },
     {
       label: "Total Return",
