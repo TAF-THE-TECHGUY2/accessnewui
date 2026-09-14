@@ -68,9 +68,9 @@ function PremiumNote({ holding }) {
           You entered at <strong>{entry}</strong> per unit.
         </p>
         <p className="mt-1.5">
-          One or more of your deposits has no published book value for its date,
-          so there is nothing to compare that entry price against. Your units,
-          contributions and current value are unaffected.
+          A deposit predates the published price series, so there is no book
+          value to compare that entry against. Your units, contributions and
+          current value are unaffected.
         </p>
       </>
     );
@@ -690,7 +690,7 @@ function FundDetailPage() {
             </div>
 
             {breakdown ? (
-              <div className="mt-5 overflow-hidden rounded-[12px] border border-black/10">
+              <div className="mt-5 rounded-[12px] border border-black/10">
                 <MetricStrip
                   metrics={portfolioMetrics(breakdown.totals, {
                     // The entry-price disclosure moves off the card and onto the

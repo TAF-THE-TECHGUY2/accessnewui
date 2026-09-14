@@ -32,9 +32,12 @@ function MetricNote({ children }) {
       >
         <Info className="h-3 w-3" />
       </button>
+      {/* Anchored to the icon's left edge and sitting below it, so it opens
+          into the card rather than across the figures either side. z-30 clears
+          the metric row; the row's own box no longer clips it. */}
       <span
         role="tooltip"
-        className="pointer-events-none invisible absolute left-1/2 top-6 z-20 w-[260px] -translate-x-1/2 rounded-[10px] border border-black/10 bg-white p-3 text-[12px] font-normal leading-5 text-[#1f2937] opacity-0 shadow-[0_10px_30px_rgba(15,61,62,0.14)] transition group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100"
+        className="pointer-events-none invisible absolute left-0 top-6 z-30 w-[280px] max-w-[70vw] rounded-[10px] border border-black/10 bg-white p-3 text-[12px] font-normal leading-5 text-[#1f2937] opacity-0 shadow-[0_12px_32px_rgba(15,61,62,0.18)] transition group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100"
       >
         {children}
       </span>
