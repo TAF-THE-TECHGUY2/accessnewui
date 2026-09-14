@@ -56,7 +56,7 @@ export function MetricStrip({ metrics, size = "md", cols = 4, className = "" }) 
       : "grid-cols-1 divide-y sm:grid-cols-2 sm:divide-y-0 sm:divide-x wide:grid-cols-4";
 
   return (
-    <div className={`grid divide-black/10 ${grid} ${className}`}>
+    <div className={`grid items-start divide-black/10 ${grid} ${className}`}>
       {metrics.map((m) => (
         <div key={m.label} className={size === "lg" ? "min-w-0 px-6 py-6" : "min-w-0 px-2 py-3"}>
           {/* Fixed height: the note icon is taller than the label text, and

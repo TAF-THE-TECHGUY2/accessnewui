@@ -203,8 +203,8 @@ function NavHistoryChart({ fundCode }) {
                 // whole-number ticks give the gridlines a readable step.
                 type="number"
                 scale="linear"
-                domain={[9, 14]}
-                ticks={[9, 10, 11, 12, 13, 14]}
+                domain={[8, 14]}
+                ticks={[8, 9, 10, 11, 12, 13, 14]}
                 allowDecimals
                 tickFormatter={(v) => v.toFixed(1)}
                 width={40}
@@ -534,7 +534,7 @@ function InvestMorePanel({ fundName, onFunded }) {
         <button
           type="submit"
           disabled={!valid}
-          className="inline-flex h-11 items-center rounded-[12px] bg-black px-6 text-[13px] font-medium text-white transition hover:bg-[#1f2937] disabled:opacity-60"
+          className="inline-flex h-11 items-center rounded-[12px] bg-black px-6 text-[13px] font-medium text-white transition hover:bg-[#333333] disabled:cursor-not-allowed disabled:bg-black disabled:opacity-100"
         >
           Continue
         </button>
