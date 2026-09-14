@@ -166,7 +166,7 @@ function NavHistoryChart({ fundCode }) {
         ) : null}
       </div>
 
-      <div className="mt-4 h-[260px]">
+      <div className="mt-3 h-[220px]">
         {points == null ? (
           <p className="grid h-full place-items-center text-[13px] text-[#6b7280]">
             Loading…

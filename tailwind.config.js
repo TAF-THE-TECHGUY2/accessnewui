@@ -5,6 +5,9 @@ export default {
     extend: {
       screens: {
         tall: { raw: "(min-height: 860px)" },
+        // Four metric figures fit across a 45% column from about here; below
+        // it they collide, so the strip falls back to 2x2.
+        wide: "1400px",
       },
       colors: {
         shell: "#f7f3ed",

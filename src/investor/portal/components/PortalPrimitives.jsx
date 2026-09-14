@@ -47,15 +47,18 @@ export function MetricStrip({ metrics, size = "md", cols = 4, className = "" }) 
 
   // Four across needs a full-width container; in a narrow one the figures
   // collide. `cols={2}` gives a 2x2 block for the fund detail's left column.
+  // Four across only once there is room for it. Below that the figures collide:
+  // at a 1280px viewport each of four cells is 105px for a value needing 130.
+  // A 2x2 block is the honest fallback, not a smaller font nobody can read.
   const grid =
     cols === 2
       ? "grid-cols-1 divide-y sm:grid-cols-2 sm:divide-x [&>*:nth-child(-n+2)]:sm:border-b [&>*:nth-child(-n+2)]:sm:border-black/10 [&>*:nth-child(odd)]:sm:border-l-0"
-      : "grid-cols-1 divide-y sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4 lg:divide-x";
+      : "grid-cols-1 divide-y sm:grid-cols-2 sm:divide-y-0 sm:divide-x wide:grid-cols-4";
 
   return (
     <div className={`grid divide-black/10 ${grid} ${className}`}>
       {metrics.map((m) => (
-        <div key={m.label} className={size === "lg" ? "px-6 py-6" : "px-2 py-4"}>
+        <div key={m.label} className={size === "lg" ? "min-w-0 px-6 py-6" : "min-w-0 px-4 py-4"}>
           <div className="flex items-center gap-2">
             {m.icon ? (
               <span className="grid h-7 w-7 place-items-center rounded-full border border-black/10 text-[#0f3d3e]">
