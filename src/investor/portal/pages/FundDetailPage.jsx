@@ -203,8 +203,8 @@ function NavHistoryChart({ fundCode }) {
                 // whole-number ticks give the gridlines a readable step.
                 type="number"
                 scale="linear"
-                domain={[8, 14]}
-                ticks={[8, 9, 10, 11, 12, 13, 14]}
+                domain={[9, 14]}
+                ticks={[9, 10, 11, 12, 13, 14]}
                 allowDecimals
                 tickFormatter={(v) => v.toFixed(1)}
                 width={40}
@@ -747,7 +747,7 @@ function FundDetailPage() {
           </div>
 
           {panel ? (
-            <section className="rounded-[12px] border border-black/10 bg-white p-6 shadow-[0_10px_30px_rgba(15,61,62,0.06)]">
+            <section className="max-h-[420px] overflow-y-auto rounded-[12px] border border-black/10 bg-white p-6 shadow-[0_10px_30px_rgba(15,61,62,0.06)]">
               <div className="mb-4 flex justify-end">
                 <button
                   type="button"

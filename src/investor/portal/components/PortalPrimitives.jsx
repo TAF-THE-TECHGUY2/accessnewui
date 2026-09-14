@@ -28,9 +28,9 @@ function MetricNote({ children }) {
       <button
         type="button"
         aria-label="About this figure"
-        className="grid h-4 w-4 place-items-center rounded-full text-[#9ca3af] transition hover:text-[#4b5563] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0f3d3e]"
+        className="grid h-3.5 w-3.5 place-items-center rounded-full text-[#9ca3af] transition hover:text-[#4b5563] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0f3d3e]"
       >
-        <Info className="h-3.5 w-3.5" />
+        <Info className="h-3 w-3" />
       </button>
       <span
         role="tooltip"
@@ -43,7 +43,7 @@ function MetricNote({ children }) {
 }
 
 export function MetricStrip({ metrics, size = "md", cols = 4, className = "" }) {
-  const valueSize = size === "lg" ? "text-[30px]" : "text-[20px]";
+  const valueSize = size === "lg" ? "text-[30px]" : "text-[17px]";
 
   // Four across needs a full-width container; in a narrow one the figures
   // collide. `cols={2}` gives a 2x2 block for the fund detail's left column.
@@ -58,14 +58,17 @@ export function MetricStrip({ metrics, size = "md", cols = 4, className = "" }) 
   return (
     <div className={`grid divide-black/10 ${grid} ${className}`}>
       {metrics.map((m) => (
-        <div key={m.label} className={size === "lg" ? "min-w-0 px-6 py-6" : "min-w-0 px-4 py-4"}>
-          <div className="flex items-center gap-2">
+        <div key={m.label} className={size === "lg" ? "min-w-0 px-6 py-6" : "min-w-0 px-2 py-3"}>
+          {/* Fixed height: the note icon is taller than the label text, and
+              without this the cell carrying it pushes its value below the
+              other three. */}
+          <div className="flex h-4 items-center gap-1.5">
             {m.icon ? (
               <span className="grid h-7 w-7 place-items-center rounded-full border border-black/10 text-[#0f3d3e]">
                 <m.icon className="h-3.5 w-3.5" />
               </span>
             ) : null}
-            <span className="text-[13px] leading-tight text-[#4b5563]">
+            <span className="truncate whitespace-nowrap text-[12px] leading-tight text-[#4b5563]">
               {m.label}
             </span>
             {m.note ? <MetricNote>{m.note}</MetricNote> : null}
