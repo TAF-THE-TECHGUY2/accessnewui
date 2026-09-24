@@ -43,6 +43,24 @@ function Banner({ tone, children }) {
   );
 }
 
+function SenderField({ id, label, value, onChange, placeholder, type = "text" }) {
+  return (
+    <div>
+      <label htmlFor={id} className="text-xs font-medium text-slate-600">
+        {label}
+      </label>
+      <input
+        id={id}
+        type={type}
+        value={value}
+        placeholder={placeholder}
+        onChange={(e) => onChange(e.target.value)}
+        className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 px-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-900"
+      />
+    </div>
+  );
+}
+
 function EmailTemplatesPage() {
   const [templates, setTemplates] = useState([]);
   const [activeKey, setActiveKey] = useState(null);
@@ -50,7 +68,14 @@ function EmailTemplatesPage() {
   const [loading, setLoading] = useState(true);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
-  const [form, setForm] = useState({ subject: "", bodyHtml: "", bodyText: "" });
+  const [form, setForm] = useState({
+    subject: "",
+    bodyHtml: "",
+    bodyText: "",
+    fromName: "",
+    fromAddress: "",
+    replyToAddress: "",
+  });
   const [tab, setTab] = useState("html");
 
   const [saving, setSaving] = useState(false);
@@ -96,6 +121,9 @@ function EmailTemplatesPage() {
           subject: data.subject || "",
           bodyHtml: data.bodyHtml || "",
           bodyText: data.bodyText || "",
+          fromName: data.fromName || "",
+          fromAddress: data.fromAddress || "",
+          replyToAddress: data.replyToAddress || "",
         });
       } catch {
         if (!cancelled) setError("Could not load that template.");
@@ -115,7 +143,10 @@ function EmailTemplatesPage() {
     return (
       form.subject !== (detail.subject || "") ||
       form.bodyHtml !== (detail.bodyHtml || "") ||
-      form.bodyText !== (detail.bodyText || "")
+      form.bodyText !== (detail.bodyText || "") ||
+      form.fromName !== (detail.fromName || "") ||
+      form.fromAddress !== (detail.fromAddress || "") ||
+      form.replyToAddress !== (detail.replyToAddress || "")
     );
   }, [detail, form]);
 
@@ -134,6 +165,10 @@ function EmailTemplatesPage() {
         subject: form.subject,
         bodyHtml: form.bodyHtml,
         bodyText: form.bodyText || null,
+        // Empty means "inherit the platform default", not "send with no name".
+        fromName: form.fromName || null,
+        fromAddress: form.fromAddress || null,
+        replyToAddress: form.replyToAddress || null,
       });
       setDetail(updated);
       setTemplates((curr) =>
@@ -200,6 +235,9 @@ function EmailTemplatesPage() {
         subject: restored.subject || "",
         bodyHtml: restored.bodyHtml || "",
         bodyText: restored.bodyText || "",
+        fromName: restored.fromName || "",
+        fromAddress: restored.fromAddress || "",
+        replyToAddress: restored.replyToAddress || "",
       });
       setPreview(null);
       setNotice("Template restored to the bundled default.");
@@ -294,6 +332,58 @@ function EmailTemplatesPage() {
                   </p>
                 </div>
               ) : null}
+
+              {/* Sender identity */}
+              <div className="rounded-xl border border-slate-200 bg-white p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                  Sender
+                </p>
+                <p className="mt-1.5 text-xs text-slate-500">
+                  Leave a field empty to inherit the platform default from
+                  Settings → Email sender.
+                </p>
+                <div className="mt-3 grid gap-3 md:grid-cols-3">
+                  <SenderField
+                    id="tpl-from-name"
+                    label="From name"
+                    value={form.fromName}
+                    placeholder={detail.inherited?.fromName || ""}
+                    onChange={(value) =>
+                      setForm((f) => ({ ...f, fromName: value }))
+                    }
+                  />
+                  <SenderField
+                    id="tpl-from-address"
+                    label="From address"
+                    type="email"
+                    value={form.fromAddress}
+                    placeholder={detail.inherited?.fromAddress || ""}
+                    onChange={(value) =>
+                      setForm((f) => ({ ...f, fromAddress: value }))
+                    }
+                  />
+                  <SenderField
+                    id="tpl-reply-to"
+                    label="Reply-to"
+                    type="email"
+                    value={form.replyToAddress}
+                    placeholder={detail.inherited?.replyToAddress || ""}
+                    onChange={(value) =>
+                      setForm((f) => ({ ...f, replyToAddress: value }))
+                    }
+                  />
+                </div>
+                {detail.inherited?.sendingDomain ? (
+                  <p className="mt-2.5 text-xs text-slate-500">
+                    A From address must be on{" "}
+                    <span className="font-medium text-slate-700">
+                      {detail.inherited.sendingDomain}
+                    </span>
+                    , the only verified sending domain. Reply-to can be any
+                    address.
+                  </p>
+                ) : null}
+              </div>
 
               {/* Subject */}
               <div className="rounded-xl border border-slate-200 bg-white p-4">

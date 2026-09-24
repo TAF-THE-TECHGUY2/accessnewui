@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Save, Settings, ShieldCheck, BellRing, Server } from "lucide-react";
+import { Save, Settings, ShieldCheck, BellRing, Server, Scale, Mail } from "lucide-react";
 import LoadingState from "../components/LoadingState";
 import { getSettings, saveSettings } from "../../services/adminService";
 
@@ -20,9 +20,26 @@ function SettingCard({ icon: Icon, title, description, children }) {
   );
 }
 
+function TextField({ label, description, value, onChange, type = "text", placeholder }) {
+  return (
+    <div>
+      <label className="mb-2 block text-sm font-semibold text-ink">{label}</label>
+      <input
+        className="admin-input"
+        type={type}
+        placeholder={placeholder}
+        value={value || ""}
+        onChange={(event) => onChange(event.target.value)}
+      />
+      <p className="mt-1.5 text-xs text-slate-500">{description}</p>
+    </div>
+  );
+}
+
 function SettingsPage() {
   const [settings, setSettings] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [saveState, setSaveState] = useState(null);
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -39,9 +56,25 @@ function SettingsPage() {
 
   const handleSave = async () => {
     setSaving(true);
-    const saved = await saveSettings(settings);
-    setSettings(saved);
-    setSaving(false);
+    setSaveState(null);
+    try {
+      const saved = await saveSettings(settings);
+      setSettings(saved);
+      setSaveState({ ok: true, message: "Settings saved." });
+    } catch (error) {
+      // Without this the button sat on "Saving..." forever and the rejected
+      // value stayed on screen, so a mistyped URL looked like it had saved.
+      const errors = error?.response?.data?.errors;
+      setSaveState({
+        ok: false,
+        message:
+          (errors ? Object.values(errors).flat()[0] : null) ||
+          error?.response?.data?.message ||
+          "Could not save settings. Please try again.",
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -57,10 +90,26 @@ function SettingsPage() {
           </p>
         </div>
 
-        <button type="button" className="admin-button" onClick={handleSave}>
-          <Save className="h-4 w-4" />
-          {saving ? "Saving..." : "Save settings"}
-        </button>
+        <div className="flex flex-col items-start gap-2 lg:items-end">
+          <button
+            type="button"
+            className="admin-button"
+            onClick={handleSave}
+            disabled={saving}
+          >
+            <Save className="h-4 w-4" />
+            {saving ? "Saving..." : "Save settings"}
+          </button>
+          {saveState ? (
+            <p
+              className={`text-sm ${
+                saveState.ok ? "text-teal-700" : "text-red-600"
+              }`}
+            >
+              {saveState.message}
+            </p>
+          ) : null}
+        </div>
       </section>
 
       <section className="grid gap-6 xl:grid-cols-2">
@@ -272,6 +321,93 @@ function SettingsPage() {
                 }
               />
             </div>
+          </div>
+        </SettingCard>
+
+        <SettingCard
+          icon={Scale}
+          title="Legal links"
+          description="Where the consent checkboxes on the create-account page point. Both open in a new tab so an applicant keeps their place."
+        >
+          <div className="space-y-4">
+            <TextField
+              label="Terms of Use"
+              type="url"
+              placeholder="https://www.ap.boston/..."
+              description="Linked from “I agree to the Terms of Use”."
+              value={settings.termsOfUseUrl}
+              onChange={(value) =>
+                setSettings((current) => ({ ...current, termsOfUseUrl: value }))
+              }
+            />
+            <TextField
+              label="Privacy Policy"
+              type="url"
+              placeholder="https://www.ap.boston/..."
+              description="Linked from “I acknowledge the Privacy Policy”."
+              value={settings.privacyPolicyUrl}
+              onChange={(value) =>
+                setSettings((current) => ({
+                  ...current,
+                  privacyPolicyUrl: value,
+                }))
+              }
+            />
+            <p className="rounded-2xl border border-sand-200 p-4 text-xs text-slate-500">
+              These pages live on the marketing site. Use the{" "}
+              <span className="font-medium text-ink">www</span> host — the bare
+              domain only redirects its home page, so an address like
+              ap.boston/terms-of-use returns a 404.
+            </p>
+          </div>
+        </SettingCard>
+
+        <SettingCard
+          icon={Mail}
+          title="Email sender"
+          description="How outgoing email identifies itself. Applies to every template unless a template overrides it."
+        >
+          <div className="space-y-4">
+            <TextField
+              label="From name"
+              placeholder="Access Properties"
+              description="The name investors see in their inbox."
+              value={settings.mailFromName}
+              onChange={(value) =>
+                setSettings((current) => ({ ...current, mailFromName: value }))
+              }
+            />
+            <TextField
+              label="From address"
+              type="email"
+              placeholder={
+                settings.mailSendingDomain
+                  ? `hello@${settings.mailSendingDomain}`
+                  : "hello@example.com"
+              }
+              description={
+                settings.mailSendingDomain
+                  ? `Must be on ${settings.mailSendingDomain} — the only domain verified to send. Another domain would be refused or land in spam.`
+                  : "The address outgoing mail is sent from."
+              }
+              value={settings.mailFromAddress}
+              onChange={(value) =>
+                setSettings((current) => ({ ...current, mailFromAddress: value }))
+              }
+            />
+            <TextField
+              label="Reply-to address"
+              type="email"
+              placeholder="hello@ap.boston"
+              description="Where replies land. Any domain — this one isn’t signed, so it can be a real staffed mailbox."
+              value={settings.mailReplyToAddress}
+              onChange={(value) =>
+                setSettings((current) => ({
+                  ...current,
+                  mailReplyToAddress: value,
+                }))
+              }
+            />
           </div>
         </SettingCard>
       </section>
