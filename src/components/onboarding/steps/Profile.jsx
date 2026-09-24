@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   AlertCircle,
   ArrowLeft,
@@ -17,11 +17,21 @@ import {
 } from "lucide-react";
 
 import OnboardingShell from "../OnboardingShell";
-import { registerInvestor } from "../../../services/investorService";
+import { fetchLegalLinks, registerInvestor } from "../../../services/investorService";
 
 // The single accredited pathway offered by this flow. Investment amount and
 // accreditation are confirmed later inside the investor portal, so the
 // registration call records the fund minimum as the starting commitment.
+// Terms of Use and Privacy Policy are pages on the marketing site, not routes
+// in this app, and admins maintain them under Settings -> Legal links. These
+// are only the fallback for a settings lookup that fails, so the consent boxes
+// never sit next to a dead link. Note the `www` host: the apex redirects to it
+// for `/` only, so an apex deep link (https://ap.boston/terms-of-use) 404s.
+const DEFAULT_LEGAL_LINKS = {
+  termsOfUseUrl: "https://www.ap.boston/terms-of-use",
+  privacyPolicyUrl: "https://www.ap.boston/privacy-policy",
+};
+
 const ACCREDITED_PATHWAY = {
   experience: "experienced",
   investmentAmount: 10000,
@@ -156,6 +166,31 @@ function Profile({ initial, onBack, onSuccess }) {
   const [showConfirm, setShowConfirm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [apiError, setApiError] = useState("");
+  const [legalLinks, setLegalLinks] = useState(DEFAULT_LEGAL_LINKS);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    fetchLegalLinks()
+      .then((links) => {
+        if (cancelled) return;
+        // Merge rather than replace: a blank value from settings keeps the
+        // bundled default instead of emptying the href.
+        setLegalLinks({
+          termsOfUseUrl: links.termsOfUseUrl || DEFAULT_LEGAL_LINKS.termsOfUseUrl,
+          privacyPolicyUrl:
+            links.privacyPolicyUrl || DEFAULT_LEGAL_LINKS.privacyPolicyUrl,
+        });
+      })
+      .catch(() => {
+        // Keep the defaults. Nothing is shown to the investor: the links work,
+        // and the half-filled form is no place for an infrastructure warning.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleChange = (event) => {
     const { name, value, type, checked } = event.target;
@@ -436,7 +471,7 @@ function Profile({ initial, onBack, onSuccess }) {
                 onChange={handleChange}
                 className="h-3.5 w-3.5 accent-[#111111]"
               />
-              Receive updates from Access Properties
+              Receive updates and insights from Access Properties
             </label>
 
             {/* Terms + Privacy side-by-side */}
@@ -452,7 +487,12 @@ function Profile({ initial, onBack, onSuccess }) {
                   />
                   <span>
                     I agree to the{" "}
-                    <a href="#" className="underline decoration-black/30 underline-offset-2">
+                    <a
+                      href={legalLinks.termsOfUseUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline decoration-black/30 underline-offset-2"
+                    >
                       Terms of Use
                     </a>
                   </span>
@@ -472,7 +512,12 @@ function Profile({ initial, onBack, onSuccess }) {
                   />
                   <span>
                     I acknowledge the{" "}
-                    <a href="#" className="underline decoration-black/30 underline-offset-2">
+                    <a
+                      href={legalLinks.privacyPolicyUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline decoration-black/30 underline-offset-2"
+                    >
                       Privacy Policy
                     </a>
                   </span>

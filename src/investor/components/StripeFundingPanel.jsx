@@ -18,7 +18,16 @@ const formatCurrency = (amount, currency = "USD") =>
 // `topUpAmount` switches the panel to an additional subscription on an already
 // active position. Left undefined it behaves exactly as the onboarding step,
 // billing the original commitment.
-function StripeFundingPanel({ investor, onInvestorUpdated, topUpAmount, onFunded }) {
+// `stepLabel` is supplied only by the onboarding tracker, where this panel
+// stands in for the numbered "Fund your subscription" card. The portal's
+// top-up flow renders the same panel outside onboarding and leaves it unset.
+function StripeFundingPanel({
+  investor,
+  onInvestorUpdated,
+  topUpAmount,
+  onFunded,
+  stepLabel = "",
+}) {
   const [intent, setIntent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [confirming, setConfirming] = useState(false);
@@ -169,6 +178,7 @@ function StripeFundingPanel({ investor, onInvestorUpdated, topUpAmount, onFunded
         </div>
         <div className="flex-1">
           <p className="text-[11px] uppercase tracking-[0.16em] text-[#6b7280]">
+            {stepLabel ? `${stepLabel} · ` : ""}
             {isDemo ? "Funding · Demo mode" : "Funding · Stripe ACH"}
           </p>
           <h3 className="font-display mt-1 text-[22px] leading-tight text-[#111111]">

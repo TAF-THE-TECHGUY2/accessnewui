@@ -264,7 +264,24 @@ function StepRow({ step, stepNumber, onStart, isCurrent, locked, busy }) {
   );
 }
 
-function PersonaModal({ investor, onClose, onCompleted, onError }) {
+/**
+ * The "Step 2 of 6 - Persona" eyebrow shared by the onboarding modals. The
+ * number is looked up in the live `steps` array rather than written into each
+ * modal, so a modal can never disagree with the tracker that opened it, and
+ * reordering `buildSteps` renumbers every screen at once.
+ */
+function StepEyebrow({ steps, stepKey, label }) {
+  const index = steps.findIndex((step) => step.key === stepKey);
+
+  return (
+    <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-[#6b7280]">
+      {index === -1 ? null : `Step ${index + 1} of ${steps.length} \u00b7 `}
+      {label}
+    </p>
+  );
+}
+
+function PersonaModal({ investor, steps, onClose, onCompleted, onError }) {
   if (!PERSONA_TEMPLATE_ID) {
     return (
       <div
@@ -300,9 +317,7 @@ function PersonaModal({ investor, onClose, onCompleted, onError }) {
     >
       <div className="flex max-h-[92vh] w-full max-w-[760px] flex-col rounded-[24px] border border-black/10 bg-white p-6 shadow-[0_30px_80px_rgba(17,24,39,0.18)]">
         <div className="mb-5">
-          <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-[#6b7280]">
-            Step 1 · Persona
-          </p>
+          <StepEyebrow steps={steps} stepKey="identity" label="Persona" />
           <h3 className="font-display mt-2 text-[26px] leading-tight text-[#111111]">
             Identity verification
           </h3>
@@ -336,7 +351,7 @@ function PersonaModal({ investor, onClose, onCompleted, onError }) {
   );
 }
 
-function OfferingDocumentsModal({ onClose }) {
+function OfferingDocumentsModal({ steps, onClose }) {
   const [docs, setDocs] = useState(null);
   const [error, setError] = useState(null);
 
@@ -362,9 +377,11 @@ function OfferingDocumentsModal({ onClose }) {
       <div className="flex max-h-[88vh] w-full max-w-[680px] flex-col rounded-[24px] border border-black/10 bg-white p-6 shadow-[0_30px_80px_rgba(17,24,39,0.18)]">
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
-            <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-[#6b7280]">
-              Step 1 · Offering documents
-            </p>
+            <StepEyebrow
+              steps={steps}
+              stepKey="review"
+              label="Offering documents"
+            />
             <h3 className="font-display mt-2 text-[26px] leading-tight text-[#111111]">
               Review offering documents
             </h3>
@@ -554,11 +571,20 @@ function DashboardPage() {
     return <PortalLayout investor={investor} setInvestor={setInvestor} />;
   }
 
-  // Per the reference design, the header indicator points at the first
-  // incomplete step — including the optional review step — purely as a visual
-  // cue; it has no effect on gating.
-  const currentStepIndex = steps.findIndex((s) => !s.complete);
-  const activeDot = currentStepIndex === -1 ? steps.length - 1 : currentStepIndex;
+  // The header counter points at whichever step the tracker itself treats as
+  // current, so the two can't disagree. Anchoring it on the first incomplete
+  // step (the previous behaviour) counted the OPTIONAL document review, which
+  // pinned the header to "STEP 1 OF 6" for every investor who had not opened
+  // the documents modal in this browser — `docsViewed` lives in local storage,
+  // so an investor waiting to fund still read step 1 on a new device.
+  const currentStepIndex = steps.findIndex((s) => s.key === currentStepKey);
+  const firstIncompleteIndex = steps.findIndex((s) => !s.complete);
+  const activeDot =
+    currentStepIndex !== -1
+      ? currentStepIndex
+      : firstIncompleteIndex !== -1
+      ? firstIncompleteIndex
+      : steps.length - 1;
 
   return (
     <OnboardingShell
@@ -597,6 +623,7 @@ function DashboardPage() {
                 <li key={step.key}>
                   <StripeFundingPanel
                     investor={investor}
+                    stepLabel={`Step ${index + 1} of ${steps.length}`}
                     onInvestorUpdated={(updated) => setInvestor(updated)}
                   />
                 </li>
@@ -639,12 +666,16 @@ function DashboardPage() {
       </div>
 
       {showDocuments ? (
-        <OfferingDocumentsModal onClose={() => setShowDocuments(false)} />
+        <OfferingDocumentsModal
+          steps={steps}
+          onClose={() => setShowDocuments(false)}
+        />
       ) : null}
 
       {showPersona ? (
         <PersonaModal
           investor={investor}
+          steps={steps}
           onClose={() => setShowPersona(false)}
           onCompleted={handlePersonaComplete}
           onError={(message) => setActionError(message)}

@@ -23,7 +23,7 @@ const FEATURES = [
   },
   {
     icon: ShieldCheck,
-    label: "Accredited status verified before commitment",
+    label: "Accredited investor status verified before investment",
   },
   {
     icon: FileText,
@@ -61,7 +61,7 @@ function Welcome({ onBegin }) {
 
           <div className="mt-4 flex items-center gap-2 text-[13px] text-[#6b7280]">
             <ShieldCheck className="h-4 w-4" />
-            Managed by Access Investment Management, Inc.
+            Advised by Access Investment Management, Inc.
           </div>
         </section>
 

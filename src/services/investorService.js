@@ -25,6 +25,21 @@ export const parseAmount = (value) => {
   return parsed * multiplier;
 };
 
+/**
+ * Terms of Use and Privacy Policy links, maintained by admins in Settings.
+ * Callers are expected to hold their own fallback: these links are rendered on
+ * a page a visitor reaches before they have an account, and a settings lookup
+ * failing is no reason to show them a dead link.
+ */
+export const fetchLegalLinks = async () => {
+  const { data } = await publicApi.get("/legal-links");
+
+  return {
+    termsOfUseUrl: data?.termsOfUseUrl || "",
+    privacyPolicyUrl: data?.privacyPolicyUrl || "",
+  };
+};
+
 export const registerInvestor = async ({
   profile,
   experience,
