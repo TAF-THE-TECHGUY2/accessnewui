@@ -581,6 +581,30 @@ function EmailTemplatesPage() {
                     </dl>
                   </div>
 
+                  {preview.hiddenComments?.length ? (
+                    <div className="px-4 pt-3">
+                      <Banner tone="warning">
+                        <p>
+                          Text between{" "}
+                          <span className="font-mono">{"{{--"}</span> and{" "}
+                          <span className="font-mono">{"--}}"}</span> is removed
+                          from the email entirely — recipients never see it.
+                          That is correct for a note to yourself, and is worth a
+                          second look if you expected this copy to be sent:
+                        </p>
+                        <ul className="mt-2 space-y-1">
+                          {preview.hiddenComments.map((c, i) => (
+                            <li key={i} className="text-xs">
+                              <span className="font-medium">{c.part}</span>,{" "}
+                              {c.length} characters removed:{" "}
+                              <span className="font-mono">{c.excerpt}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </Banner>
+                    </div>
+                  ) : null}
+
                   {preview.missingVariables?.length ? (
                     <div className="px-4 pt-3">
                       <Banner tone="warning">
@@ -591,7 +615,7 @@ function EmailTemplatesPage() {
                         </span>
                       </Banner>
                     </div>
-                  ) : (
+                  ) : preview.hiddenComments?.length ? null : (
                     <div className="flex items-center gap-2 px-4 pt-3 text-sm text-emerald-700">
                       <Check className="h-4 w-4" />
                       All referenced variables resolve.
