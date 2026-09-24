@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
   Check,
@@ -61,6 +61,31 @@ function SenderField({ id, label, value, onChange, placeholder, type = "text" })
   );
 }
 
+/**
+ * One line of the rendered envelope. `inherited` marks a field the admin left
+ * blank on this template — the value shown is the platform default from
+ * Settings, and saying so is the difference between "my change didn't apply"
+ * and "this field is inheriting".
+ */
+function HeaderLine({ label, value, inherited }) {
+  return (
+    <div className="flex flex-wrap items-baseline gap-x-2">
+      <dt className="text-slate-500">{label}:</dt>
+      <dd className="font-medium text-slate-900">{value || "\u2014"}</dd>
+      {inherited ? (
+        <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-medium text-slate-500">
+          inherited from Settings
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+const formatSender = (name, address) => {
+  if (!address) return "";
+  return name ? `${name} <${address}>` : address;
+};
+
 function EmailTemplatesPage() {
   const [templates, setTemplates] = useState([]);
   const [activeKey, setActiveKey] = useState(null);
@@ -81,6 +106,12 @@ function EmailTemplatesPage() {
   const [saving, setSaving] = useState(false);
   const [previewing, setPreviewing] = useState(false);
   const [preview, setPreview] = useState(null);
+  // The preview renders below the editor, well past the fold on a laptop.
+  // Without this, clicking Preview looked like it did nothing at all.
+  const previewRef = useRef(null);
+  // The editor has two tabs; the preview only ever rendered the HTML, so the
+  // plain-text version could be written but never looked at.
+  const [previewTab, setPreviewTab] = useState("html");
   const [testEmail, setTestEmail] = useState("");
   const [sendingTest, setSendingTest] = useState(false);
   const [resetting, setResetting] = useState(false);
@@ -171,6 +202,19 @@ function EmailTemplatesPage() {
         replyToAddress: form.replyToAddress || null,
       });
       setDetail(updated);
+      // Re-seed the editor from the saved record. Laravel trims request
+      // strings, so a body ending in a newline came back shorter than what is
+      // in the textarea — the dirty check then stayed true and the button sat
+      // on "Save changes" after a successful save, which reads exactly like the
+      // edit never went through.
+      setForm({
+        subject: updated.subject || "",
+        bodyHtml: updated.bodyHtml || "",
+        bodyText: updated.bodyText || "",
+        fromName: updated.fromName || "",
+        fromAddress: updated.fromAddress || "",
+        replyToAddress: updated.replyToAddress || "",
+      });
       setTemplates((curr) =>
         curr.map((t) =>
           t.key === updated.key
@@ -194,14 +238,26 @@ function EmailTemplatesPage() {
         subject: form.subject,
         bodyHtml: form.bodyHtml,
         bodyText: form.bodyText || null,
+        // Unsaved sender edits too, so the preview shows the addresses in the
+        // editor rather than the ones from the last save.
+        fromName: form.fromName || null,
+        fromAddress: form.fromAddress || null,
+        replyToAddress: form.replyToAddress || null,
       });
       setPreview(result);
+      setPreviewTab(tab);
+      // Rendered on the next frame, once the panel exists in the DOM.
+      requestAnimationFrame(() =>
+        previewRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
+      );
     } catch (err) {
       setError(readApiError(err, "Could not render the preview."));
     } finally {
       setPreviewing(false);
     }
-  }, [activeKey, form]);
+    // `tab` belongs here: without it the callback closes over the tab the
+    // editor opened on, and the preview always came back showing the HTML.
+  }, [activeKey, form, tab]);
 
   const handleTest = async () => {
     setSendingTest(true);
@@ -498,6 +554,92 @@ function EmailTemplatesPage() {
                 </button>
               </div>
 
+              {/* Preview output */}
+              {preview ? (
+                <div ref={previewRef} className="rounded-xl border border-slate-200 bg-white">
+                  <div className="border-b border-slate-200 px-4 py-3">
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                      Preview
+                    </p>
+                    <dl className="mt-2 space-y-1 text-sm">
+                      <HeaderLine
+                        label="From"
+                        value={formatSender(
+                          preview.sender?.fromName,
+                          preview.sender?.fromAddress,
+                        )}
+                        inherited={preview.sender?.inherited?.fromAddress}
+                      />
+                      {preview.sender?.replyToAddress ? (
+                        <HeaderLine
+                          label="Reply-to"
+                          value={preview.sender.replyToAddress}
+                          inherited={preview.sender?.inherited?.replyToAddress}
+                        />
+                      ) : null}
+                      <HeaderLine label="Subject" value={preview.subject} />
+                    </dl>
+                  </div>
+
+                  {preview.missingVariables?.length ? (
+                    <div className="px-4 pt-3">
+                      <Banner tone="warning">
+                        These variables are referenced but not supplied and will
+                        render empty:{" "}
+                        <span className="font-mono">
+                          {preview.missingVariables.join(", ")}
+                        </span>
+                      </Banner>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 px-4 pt-3 text-sm text-emerald-700">
+                      <Check className="h-4 w-4" />
+                      All referenced variables resolve.
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-1 border-b border-slate-200 px-3 pt-3">
+                    {TABS.map((t) => (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => setPreviewTab(t.id)}
+                        className={`rounded-t-lg px-3.5 py-2 text-sm font-medium transition ${
+                          previewTab === t.id
+                            ? "bg-slate-900 text-white"
+                            : "text-slate-500 hover:text-slate-900"
+                        }`}
+                      >
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="p-4">
+                    {previewTab === "html" ? (
+                      <iframe
+                        title="Email preview"
+                        srcDoc={preview.html}
+                        sandbox=""
+                        className="h-[560px] w-full rounded-lg border border-slate-200 bg-white"
+                      />
+                    ) : preview.text ? (
+                      // Rendered as text, not HTML: this is the part mail
+                      // clients show verbatim, so whitespace is the content.
+                      <pre className="h-[560px] w-full overflow-auto whitespace-pre-wrap rounded-lg border border-slate-200 bg-slate-50 p-4 font-mono text-xs leading-5 text-slate-800">
+                        {preview.text}
+                      </pre>
+                    ) : (
+                      <Banner tone="warning">
+                        This template has no plain-text version. Mail clients
+                        that can&rsquo;t show HTML will receive nothing, and a
+                        missing text part hurts deliverability.
+                      </Banner>
+                    )}
+                  </div>
+                </div>
+              ) : null}
+
               {/* Test send */}
               <div className="rounded-xl border border-slate-200 bg-white p-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
@@ -538,47 +680,6 @@ function EmailTemplatesPage() {
                   </div>
                 ) : null}
               </div>
-
-              {/* Preview output */}
-              {preview ? (
-                <div className="rounded-xl border border-slate-200 bg-white">
-                  <div className="border-b border-slate-200 px-4 py-3">
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                      Preview
-                    </p>
-                    <p className="mt-1.5 text-sm text-slate-900">
-                      <span className="text-slate-500">Subject: </span>
-                      {preview.subject}
-                    </p>
-                  </div>
-
-                  {preview.missingVariables?.length ? (
-                    <div className="px-4 pt-3">
-                      <Banner tone="warning">
-                        These variables are referenced but not supplied and will
-                        render empty:{" "}
-                        <span className="font-mono">
-                          {preview.missingVariables.join(", ")}
-                        </span>
-                      </Banner>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2 px-4 pt-3 text-sm text-emerald-700">
-                      <Check className="h-4 w-4" />
-                      All referenced variables resolve.
-                    </div>
-                  )}
-
-                  <div className="p-4">
-                    <iframe
-                      title="Email preview"
-                      srcDoc={preview.html}
-                      sandbox=""
-                      className="h-[560px] w-full rounded-lg border border-slate-200 bg-white"
-                    />
-                  </div>
-                </div>
-              ) : null}
             </div>
           )}
         </section>
