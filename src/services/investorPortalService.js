@@ -14,6 +14,22 @@ export const logout = async () => {
   }
 };
 
+/**
+ * Re-issues the shared `.ap.boston` cookie that unlocks the gated fund pages on
+ * the marketing site. Investors who signed in before that cookie existed, or
+ * whose cookie has expired, would otherwise keep seeing the locked page here
+ * despite being signed in. Failure is not worth surfacing -- it costs the
+ * visitor nothing but a locked marketing page.
+ */
+export const refreshMemberSession = async () => {
+  try {
+    await investorApi.post("/session/refresh");
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 export const requestPasswordReset = async ({ email }) => {
   const { data } = await investorApi.post("/password/forgot", { email });
   return data;
@@ -136,6 +152,20 @@ export const fetchHoldingDistributions = async (fundCode) => {
 export const fetchHoldingFees = async (fundCode) => {
   const { data } = await investorApi.get(`/portal/holdings/${fundCode}/fees`);
   return data;
+};
+
+/**
+ * The fund's real estate, proxied by our API from the site that manages it.
+ *
+ * Resolves to `{ data, unavailable }`. `unavailable` is set when the source
+ * could not be read — the caller shows an explanation rather than an empty
+ * list, so "the feed is down" never reads as "this fund owns nothing".
+ */
+export const fetchHoldingProperties = async (fundCode) => {
+  const { data } = await investorApi.get(
+    `/portal/holdings/${fundCode}/properties`
+  );
+  return { data: data.data ?? [], unavailable: data.unavailable ?? null };
 };
 
 export const fetchPortalDocuments = async () => {

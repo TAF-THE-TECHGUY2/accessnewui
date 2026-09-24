@@ -23,9 +23,11 @@ import {
   fetchHoldingDistributions,
   fetchHoldingFees,
   fetchHoldingPriceHistory,
+  fetchHoldingProperties,
   fetchHoldings,
 } from "../../../services/investorPortalService";
 import StripeFundingPanel from "../../components/StripeFundingPanel";
+import PropertyCard from "../components/PropertyCard";
 import {
   AttributeRows,
   MetricStrip,
@@ -725,6 +727,13 @@ function FundDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [panel, setPanel] = useState(null);
+  // Properties come from a third-party site over the network, so they load when
+  // the panel is first opened rather than on every visit to the fund page.
+  const [properties, setProperties] = useState({
+    status: "idle",
+    data: [],
+    unavailable: null,
+  });
 
   const load = () =>
     Promise.all([
@@ -763,6 +772,37 @@ function FundDetailPage() {
       .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code]);
+
+  // Reset on navigation between funds, or the previous fund's properties would
+  // show under the new one until its own fetch resolved.
+  useEffect(() => {
+    setProperties({ status: "idle", data: [], unavailable: null });
+  }, [code]);
+
+  useEffect(() => {
+    if (panel !== "holdings" || properties.status !== "idle") return;
+
+    let cancelled = false;
+    setProperties((p) => ({ ...p, status: "loading" }));
+
+    fetchHoldingProperties(code)
+      .then(({ data, unavailable }) => {
+        if (!cancelled) setProperties({ status: "done", data, unavailable });
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setProperties({
+            status: "done",
+            data: [],
+            unavailable: "source_unreachable",
+          });
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [panel, code, properties.status]);
 
   if (loading) {
     return <p className="text-sm text-[#6b7280]">Loading fund…</p>;
@@ -851,7 +891,13 @@ function FundDetailPage() {
             <ActionTile
               icon={TrendingUp}
               label="View Holdings"
-              sub="–"
+              sub={
+                properties.status === "done" && !properties.unavailable
+                  ? `${properties.data.length} ${
+                      properties.data.length === 1 ? "property" : "properties"
+                    }`
+                  : "–"
+              }
               active={panel === "holdings"}
               onClick={() => setPanel("holdings")}
             />
@@ -872,7 +918,14 @@ function FundDetailPage() {
           </div>
 
           {panel ? (
-            <section className="max-h-[420px] overflow-y-auto rounded-[12px] border border-black/10 bg-white p-6 shadow-[0_10px_30px_rgba(15,61,62,0.06)]">
+            <section
+              className={`overflow-y-auto rounded-[12px] border border-black/10 bg-white p-6 shadow-[0_10px_30px_rgba(15,61,62,0.06)] ${
+                // Property cards carry photos, so the taller cap stops the
+                // panel becoming a keyhole. The other panels are short field
+                // lists and keep the original height.
+                panel === "holdings" ? "max-h-[720px]" : "max-h-[420px]"
+              }`}
+            >
               <div className="mb-4 flex justify-end">
                 <button
                   type="button"
@@ -889,40 +942,42 @@ function FundDetailPage() {
               {panel === "holdings" ? (
                 <>
                   <h3 className="font-display text-[20px] leading-tight text-[#111111]">
-                    Your holding
+                    Holdings
                   </h3>
-                  <dl className="mt-4 grid gap-5 sm:grid-cols-2">
-                    <Field
-                      label="Current unit price"
-                      value={`$${holding.currentUnitPrice.toFixed(4)}`}
-                      hint="published book value"
-                    />
-                    <Field
-                      label="Units held"
-                      value={formatUnits(holding.totalUnits)}
-                    />
-                    <Field
-                      label="Total distributions"
-                      value={formatCurrency(holding.totalDistributions)}
-                    />
-                    <Field
-                      label="First invested"
-                      value={formatDate(holding.firstTransactionDate)}
-                      hint={
-                        holding.transactionCount > 1
-                          ? `${holding.transactionCount} investments`
-                          : undefined
-                      }
-                    />
-                    <Field
-                      label="% of portfolio"
-                      value={`${holding.percentOfPortfolio.toFixed(1)}%`}
-                    />
-                    <Field
-                      label="Target yield"
-                      value={holding.targetYield || "—"}
-                    />
-                  </dl>
+                  <p className="mt-1 text-[13px] text-[#6b7280]">
+                    The properties held by {holding.fundName}.
+                  </p>
+
+                  {properties.status !== "done" ? (
+                    <p className="mt-4 text-[13px] text-[#6b7280]">
+                      Loading properties…
+                    </p>
+                  ) : properties.unavailable ? (
+                    /* Never let a broken feed read as "this fund owns nothing" —
+                       an investor drawing that conclusion would be badly
+                       misinformed about what backs their units. */
+                    <div className="mt-4 flex items-start gap-3 rounded-[14px] border border-black/10 bg-[#f7f5f1] p-4">
+                      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[#6b7280]" />
+                      <div className="text-[13px] leading-6 text-[#1f2937]">
+                        {properties.unavailable === "not_configured"
+                          ? "The property feed is not connected yet, so this fund's holdings cannot be shown."
+                          : "The property records could not be loaded just now. This does not affect your investment — please try again shortly."}
+                      </div>
+                    </div>
+                  ) : properties.data.length === 0 ? (
+                    <p className="mt-4 text-[13px] text-[#6b7280]">
+                      No properties are recorded for this fund yet.
+                    </p>
+                  ) : (
+                    <div className="mt-4 space-y-4">
+                      {properties.data.map((property, i) => (
+                        <PropertyCard
+                          key={property.id ?? property.address ?? i}
+                          property={property}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </>
               ) : null}
 
