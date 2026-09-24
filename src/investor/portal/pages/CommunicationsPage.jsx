@@ -172,7 +172,7 @@ function CommunicationDetail({ id, onBack }) {
         <p className="mt-4 text-base text-[#4b5563]">{item.summary}</p>
       ) : null}
       <div
-        className="prose prose-sm mt-6 max-w-none text-[#1f2937]"
+        className="rich-text mt-6 text-[#1f2937]"
         // Server-side admin authors trusted content; sanitize on input rather than output.
         // eslint-disable-next-line react/no-danger
         dangerouslySetInnerHTML={{ __html: item.body }}

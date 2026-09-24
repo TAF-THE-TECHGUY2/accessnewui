@@ -37,7 +37,19 @@ export const fetchLegalLinks = async () => {
   return {
     termsOfUseUrl: data?.termsOfUseUrl || "",
     privacyPolicyUrl: data?.privacyPolicyUrl || "",
+    // True when the destination is a page this app renders, which is what
+    // decides whether the link can be a client-side navigation. An older
+    // response without these keys reads as external, which is what it was.
+    termsOfUseInternal: data?.termsOfUseInternal === true,
+    privacyPolicyInternal: data?.privacyPolicyInternal === true,
   };
+};
+
+/** One legal page. Throws on 404, which is how an unpublished page reads. */
+export const fetchLegalPage = async (slug) => {
+  const { data } = await publicApi.get(`/legal/${slug}`);
+
+  return data;
 };
 
 export const registerInvestor = async ({
