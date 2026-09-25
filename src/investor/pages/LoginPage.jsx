@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, Loader2 } from "lucide-react";
 
 import { login } from "../../services/investorPortalService";
+import { fetchPublicSettings } from "../../services/investorService";
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -14,6 +15,26 @@ function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  // Where the Back link points, set by an admin under Settings -> Sign-in page.
+  // Empty means they want no link, so nothing renders.
+  const [backUrl, setBackUrl] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    fetchPublicSettings()
+      .then((settings) => {
+        if (!cancelled) setBackUrl(settings.loginBackUrl);
+      })
+      .catch(() => {
+        // Leave it hidden. A missing way back is a smaller problem than an
+        // error message on a sign-in page.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -126,6 +147,16 @@ function LoginPage() {
             Sign in
           </button>
         </form>
+
+        {backUrl ? (
+          <a
+            href={backUrl}
+            className="mt-3 inline-flex h-[50px] w-full items-center justify-center gap-2 rounded-[10px] border border-black/15 bg-white px-5 text-[15px] font-medium text-[#111111] transition hover:border-black/40 hover:bg-[#fafafa] active:scale-[0.99]"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back
+          </a>
+        ) : null}
 
         <p className="mt-6 text-center text-[13px] text-[#6b7280]">
           New to the accredited investor pathway?{" "}

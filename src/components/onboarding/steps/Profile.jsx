@@ -17,7 +17,10 @@ import {
 } from "lucide-react";
 
 import OnboardingShell from "../OnboardingShell";
-import { fetchLegalLinks, registerInvestor } from "../../../services/investorService";
+import {
+  fetchPublicSettings,
+  registerInvestor,
+} from "../../../services/investorService";
 
 // Terms of Use and Privacy Policy are documents owned outside this app; admins
 // maintain the two URLs under Settings -> Legal links. These are only the
@@ -174,7 +177,7 @@ function Profile({ initial, onBack, onSuccess }) {
   useEffect(() => {
     let cancelled = false;
 
-    fetchLegalLinks()
+    fetchPublicSettings()
       .then((links) => {
         if (cancelled) return;
         // Merge rather than replace: a blank value from settings keeps the

@@ -74,7 +74,7 @@ test.describe("Accredited onboarding — review fixes", () => {
   }) => {
     // Admins maintain these under Settings -> Legal links; the page must render
     // what the API returns rather than anything baked into the bundle.
-    await context.route("**/api/legal-links", (route) =>
+    await context.route("**/api/public-settings", (route) =>
       route.fulfill({
         contentType: "application/json",
         body: JSON.stringify({
@@ -100,7 +100,7 @@ test.describe("Accredited onboarding — review fixes", () => {
     page,
     context,
   }) => {
-    await context.route("**/api/legal-links", (route) => route.abort());
+    await context.route("**/api/public-settings", (route) => route.abort());
 
     await gotoCreateAccount(page);
 
@@ -120,8 +120,19 @@ test.describe("Accredited onboarding — review fixes", () => {
     page,
     context,
   }) => {
-    // Stubbed so the assertion is about this app's links, not the marketing
-    // site's uptime.
+    // Both stubbed: the assertion is about this app's links, not the marketing
+    // site's uptime, and not whatever URLs this environment happens to have
+    // configured.
+    await context.route("**/api/public-settings", (route) =>
+      route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          termsOfUseUrl: "https://www.ap.boston/terms-of-use",
+          privacyPolicyUrl: "https://www.ap.boston/privacy-policy",
+          loginBackUrl: null,
+        }),
+      }),
+    );
     await context.route("https://www.ap.boston/**", (route) =>
       route.fulfill({ contentType: "text/html", body: "<h1>legal page</h1>" }),
     );

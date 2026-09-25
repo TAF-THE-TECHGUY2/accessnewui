@@ -1,5 +1,14 @@
 import { useEffect, useState } from "react";
-import { Save, Settings, ShieldCheck, BellRing, Server, Scale, Mail } from "lucide-react";
+import {
+  Save,
+  Settings,
+  ShieldCheck,
+  BellRing,
+  Server,
+  Scale,
+  Mail,
+  LogIn,
+} from "lucide-react";
 import LoadingState from "../components/LoadingState";
 import { getSettings, saveSettings } from "../../services/adminService";
 
@@ -360,6 +369,23 @@ function SettingsPage() {
               ap.boston/terms-of-use returns a 404.
             </p>
           </div>
+        </SettingCard>
+
+        <SettingCard
+          icon={LogIn}
+          title="Sign-in page"
+          description="The investor portal sits on its own subdomain, so the sign-in page needs a way back to wherever visitors came from."
+        >
+          <TextField
+            label="Back link"
+            type="url"
+            placeholder="https://www.ap.boston"
+            description="Shown as a Back button under Sign in. Leave empty to hide the button entirely."
+            value={settings.loginBackUrl}
+            onChange={(value) =>
+              setSettings((current) => ({ ...current, loginBackUrl: value }))
+            }
+          />
         </SettingCard>
 
         <SettingCard

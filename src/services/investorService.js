@@ -26,17 +26,21 @@ export const parseAmount = (value) => {
 };
 
 /**
- * Terms of Use and Privacy Policy links, maintained by admins in Settings.
- * Callers are expected to hold their own fallback: these links are rendered on
- * a page a visitor reaches before they have an account, and a settings lookup
- * failing is no reason to show them a dead link.
+ * Admin-editable values the signed-out pages need: the legal links on the
+ * create-account form and the Back link on the sign-in page.
+ *
+ * Callers hold their own fallback for the legal links, since those are rendered
+ * beside consent checkboxes and a settings lookup failing is no reason to show
+ * a visitor a dead link. `loginBackUrl` is empty when an admin wants no Back
+ * link, so an empty value means hide it rather than substitute something.
  */
-export const fetchLegalLinks = async () => {
-  const { data } = await publicApi.get("/legal-links");
+export const fetchPublicSettings = async () => {
+  const { data } = await publicApi.get("/public-settings");
 
   return {
     termsOfUseUrl: data?.termsOfUseUrl || "",
     privacyPolicyUrl: data?.privacyPolicyUrl || "",
+    loginBackUrl: data?.loginBackUrl || "",
   };
 };
 
