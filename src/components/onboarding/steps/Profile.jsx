@@ -19,22 +19,22 @@ import {
 import OnboardingShell from "../OnboardingShell";
 import { fetchLegalLinks, registerInvestor } from "../../../services/investorService";
 
-// The single accredited pathway offered by this flow. Investment amount and
-// accreditation are confirmed later inside the investor portal, so the
-// registration call records the fund minimum as the starting commitment.
-// Terms of Use and Privacy Policy may be pages this app renders or links on
-// the marketing site — the API says which. Either way they open in a new tab:
-// the visitor is midway through this form, and navigating away would discard
-// everything they have typed.
-// in this app, and admins maintain them under Settings -> Legal links. These
-// are only the fallback for a settings lookup that fails, so the consent boxes
-// never sit next to a dead link. Note the `www` host: the apex redirects to it
-// for `/` only, so an apex deep link (https://ap.boston/terms-of-use) 404s.
+// Terms of Use and Privacy Policy are documents owned outside this app; admins
+// maintain the two URLs under Settings -> Legal links. These are only the
+// fallback for a settings lookup that fails, so the consent boxes can never sit
+// next to a dead link. Note the `www` host: the apex redirects only its home
+// page, so an apex deep link (https://ap.boston/terms-of-use) 404s.
+//
+// Both open in a new tab. The visitor is midway through this form and its state
+// is in memory, so navigating away would discard everything they have typed.
 const DEFAULT_LEGAL_LINKS = {
   termsOfUseUrl: "https://www.ap.boston/terms-of-use",
   privacyPolicyUrl: "https://www.ap.boston/privacy-policy",
 };
 
+// The single accredited pathway offered by this flow. Investment amount and
+// accreditation are confirmed later inside the investor portal, so the
+// registration call records the fund minimum as the starting commitment.
 const ACCREDITED_PATHWAY = {
   experience: "experienced",
   investmentAmount: 10000,

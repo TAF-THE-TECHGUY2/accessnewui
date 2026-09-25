@@ -294,16 +294,6 @@ export const reopenAdminThread = async (id) => {
   return data;
 };
 
-export const fetchLegalPages = async () => {
-  const { data } = await api.get("/legal-pages");
-  return data.data;
-};
-
-export const updateLegalPage = async (slug, payload) => {
-  const { data } = await api.patch(`/legal-pages/${slug}`, payload);
-  return data;
-};
-
 export const updateAdminCommunication = async (id, payload) => {
   const { data } = await api.patch(`/communications/${id}`, payload);
   return data;

@@ -3,7 +3,6 @@ import { Navigate, Route, Routes } from "react-router-dom";
 
 const Onboarding = lazy(() => import("../components/Onboarding"));
 const FaqPage = lazy(() => import("../pages/FaqPage"));
-const LegalPage = lazy(() => import("../pages/LegalPage"));
 const AdminLayout = lazy(() => import("../admin/layout/AdminLayout"));
 const RequireAuth = lazy(() => import("../admin/components/RequireAuth"));
 const LoginPage = lazy(() => import("../admin/pages/LoginPage"));
@@ -13,7 +12,6 @@ const InvestorDetailPage = lazy(() => import("../admin/pages/InvestorDetailPage"
 const KycVerificationPage = lazy(() => import("../admin/pages/KycVerificationPage"));
 const EmailLogsPage = lazy(() => import("../admin/pages/EmailLogsPage"));
 const EmailTemplatesPage = lazy(() => import("../admin/pages/EmailTemplatesPage"));
-const LegalPagesPage = lazy(() => import("../admin/pages/LegalPagesPage"));
 const ReportsPage = lazy(() => import("../admin/pages/ReportsPage"));
 const SettingsPage = lazy(() => import("../admin/pages/SettingsPage"));
 const FundsPage = lazy(() => import("../admin/pages/FundsPage"));
@@ -44,7 +42,6 @@ function AppRouter() {
         <Route path="/" element={<Onboarding />} />
         <Route path="/faq" element={<FaqPage />} />
         {/* Public: linked from the create-account form, before there is an account. */}
-        <Route path="/legal/:slug" element={<LegalPage />} />
         <Route path="/admin/login" element={<LoginPage />} />
         <Route path="/login" element={<InvestorLoginPage />} />
         <Route path="/forgot-password" element={<InvestorForgotPasswordPage />} />
@@ -74,7 +71,6 @@ function AppRouter() {
             <Route path="communications" element={<AdminCommunicationsPage />} />
             <Route path="email-logs" element={<EmailLogsPage />} />
             <Route path="email-templates" element={<EmailTemplatesPage />} />
-            <Route path="legal-pages" element={<LegalPagesPage />} />
             <Route path="reports" element={<ReportsPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
