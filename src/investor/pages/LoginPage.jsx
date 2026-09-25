@@ -146,17 +146,17 @@ function LoginPage() {
             {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
             Sign in
           </button>
-        </form>
 
-        {backUrl ? (
-          <a
-            href={backUrl}
-            className="mt-3 inline-flex h-[50px] w-full items-center justify-center gap-2 rounded-[10px] border border-black/15 bg-white px-5 text-[15px] font-medium text-[#111111] transition hover:border-black/40 hover:bg-[#fafafa] active:scale-[0.99]"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </a>
-        ) : null}
+          {backUrl ? (
+            <a
+              href={backUrl}
+              className="mt-3 inline-flex h-[50px] w-full items-center justify-center gap-2 rounded-[10px] border border-black/15 bg-white px-5 text-[15px] font-medium text-[#111111] transition hover:border-black/40 hover:bg-[#fafafa] active:scale-[0.99]"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back
+            </a>
+          ) : null}
+        </form>
 
         <p className="mt-6 text-center text-[13px] text-[#6b7280]">
           New to the accredited investor pathway?{" "}

@@ -37,10 +37,14 @@ test.describe("Sign-in page — Back link", () => {
     );
 
     // "Under the Sign in button" is the requirement, so assert the geometry
-    // rather than trusting source order.
+    // rather than trusting source order. Width matters too: the form element is
+    // itself the white panel, so a link placed after it floats outside the card
+    // at the panel's full outer width instead of sitting inside with Sign in.
     const signIn = await page.getByRole("button", { name: /sign in/i }).boundingBox();
     const back = await backLink(page).boundingBox();
     expect(back.y).toBeGreaterThan(signIn.y);
+    expect(Math.abs(back.width - signIn.width)).toBeLessThan(2);
+    expect(Math.abs(back.x - signIn.x)).toBeLessThan(2);
   });
 
   test("is hidden when an admin clears the setting", async ({ page }) => {
