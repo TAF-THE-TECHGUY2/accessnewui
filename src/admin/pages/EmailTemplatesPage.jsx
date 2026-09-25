@@ -86,6 +86,35 @@ const formatSender = (name, address) => {
   return name ? `${name} <${address}>` : address;
 };
 
+const seedFields = (fields) =>
+  Object.fromEntries((fields || []).map((f) => [f.key, f.text]));
+
+/**
+ * One paragraph of the letter. The label says what it is; the box holds words
+ * and nothing else — no tags, no styles, no way to break the layout.
+ */
+function ContentField({ field, value, onChange, onFocus, registerRef }) {
+  return (
+    <div>
+      <label
+        htmlFor={`field-${field.key}`}
+        className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500"
+      >
+        {field.label}
+      </label>
+      <textarea
+        id={`field-${field.key}`}
+        ref={registerRef}
+        value={value ?? ""}
+        onChange={(e) => onChange(field.key, e.target.value)}
+        onFocus={onFocus}
+        rows={Math.min(8, Math.max(2, Math.ceil((value ?? "").length / 70) + 1))}
+        className="mt-1.5 w-full resize-y rounded-lg border border-slate-200 p-3 text-sm leading-6 text-slate-900 outline-none focus:border-slate-900"
+      />
+    </div>
+  );
+}
+
 function EmailTemplatesPage() {
   const [templates, setTemplates] = useState([]);
   const [activeKey, setActiveKey] = useState(null);
@@ -102,6 +131,14 @@ function EmailTemplatesPage() {
     replyToAddress: "",
   });
   const [tab, setTab] = useState("html");
+  // "content" edits the prose field by field and leaves the markup alone;
+  // "raw" is the original two textareas, kept for when the markup itself has
+  // to change. A template whose prose could not be isolated has no content
+  // mode to offer and opens straight into raw.
+  const [mode, setMode] = useState("content");
+  const [fieldValues, setFieldValues] = useState({});
+  // Where an inserted variable should land.
+  const lastFocusedField = useRef(null);
 
   const [saving, setSaving] = useState(false);
   const [previewing, setPreviewing] = useState(false);
@@ -156,6 +193,8 @@ function EmailTemplatesPage() {
           fromAddress: data.fromAddress || "",
           replyToAddress: data.replyToAddress || "",
         });
+        setFieldValues(seedFields(data.fields));
+        setMode(data.fields?.length ? "content" : "raw");
       } catch {
         if (!cancelled) setError("Could not load that template.");
       } finally {
@@ -171,6 +210,15 @@ function EmailTemplatesPage() {
 
   const dirty = useMemo(() => {
     if (!detail) return false;
+    if (mode === "content") {
+      return (
+        form.subject !== (detail.subject || "") ||
+        form.fromName !== (detail.fromName || "") ||
+        form.fromAddress !== (detail.fromAddress || "") ||
+        form.replyToAddress !== (detail.replyToAddress || "") ||
+        (detail.fields || []).some((f) => (fieldValues[f.key] ?? "") !== f.text)
+      );
+    }
     return (
       form.subject !== (detail.subject || "") ||
       form.bodyHtml !== (detail.bodyHtml || "") ||
@@ -179,7 +227,23 @@ function EmailTemplatesPage() {
       form.fromAddress !== (detail.fromAddress || "") ||
       form.replyToAddress !== (detail.replyToAddress || "")
     );
-  }, [detail, form]);
+  }, [detail, form, fieldValues, mode]);
+
+  /**
+   * Only the boxes whose text actually differs from what is stored.
+   *
+   * Sending all of them would rewrite every paragraph on every save, and a
+   * rewrite is not free: inline markup the editor cannot represent is dropped
+   * on the way back. Untouched copy should stay exactly as it is.
+   */
+  const changedFields = useMemo(() => {
+    const changed = {};
+    for (const f of detail?.fields || []) {
+      const value = fieldValues[f.key] ?? "";
+      if (value !== f.text) changed[f.key] = value;
+    }
+    return changed;
+  }, [detail, fieldValues]);
 
   const readApiError = (err, fallback) => {
     const res = err?.response?.data;
@@ -192,15 +256,23 @@ function EmailTemplatesPage() {
     setError("");
     setNotice("");
     try {
-      const updated = await updateEmailTemplate(activeKey, {
-        subject: form.subject,
-        bodyHtml: form.bodyHtml,
-        bodyText: form.bodyText || null,
+      const sender = {
         // Empty means "inherit the platform default", not "send with no name".
         fromName: form.fromName || null,
         fromAddress: form.fromAddress || null,
         replyToAddress: form.replyToAddress || null,
-      });
+      };
+      const updated = await updateEmailTemplate(
+        activeKey,
+        mode === "content"
+          ? { subject: form.subject, fields: changedFields, ...sender }
+          : {
+              subject: form.subject,
+              bodyHtml: form.bodyHtml,
+              bodyText: form.bodyText || null,
+              ...sender,
+            },
+      );
       setDetail(updated);
       // Re-seed the editor from the saved record. Laravel trims request
       // strings, so a body ending in a newline came back shorter than what is
@@ -215,6 +287,7 @@ function EmailTemplatesPage() {
         fromAddress: updated.fromAddress || "",
         replyToAddress: updated.replyToAddress || "",
       });
+      setFieldValues(seedFields(updated.fields));
       setTemplates((curr) =>
         curr.map((t) =>
           t.key === updated.key
@@ -236,13 +309,14 @@ function EmailTemplatesPage() {
     try {
       const result = await previewEmailTemplate(activeKey, {
         subject: form.subject,
-        bodyHtml: form.bodyHtml,
-        bodyText: form.bodyText || null,
         // Unsaved sender edits too, so the preview shows the addresses in the
         // editor rather than the ones from the last save.
         fromName: form.fromName || null,
         fromAddress: form.fromAddress || null,
         replyToAddress: form.replyToAddress || null,
+        ...(mode === "content"
+          ? { fields: changedFields }
+          : { bodyHtml: form.bodyHtml, bodyText: form.bodyText || null }),
       });
       setPreview(result);
       setPreviewTab(tab);
@@ -257,7 +331,7 @@ function EmailTemplatesPage() {
     }
     // `tab` belongs here: without it the callback closes over the tab the
     // editor opened on, and the preview always came back showing the HTML.
-  }, [activeKey, form, tab]);
+  }, [activeKey, form, tab, mode, changedFields]);
 
   const handleTest = async () => {
     setSendingTest(true);
@@ -271,6 +345,37 @@ function EmailTemplatesPage() {
     } finally {
       setSendingTest(false);
     }
+  };
+
+  /**
+   * Drops a variable at the cursor of whichever content box was last focused.
+   *
+   * Typing `{{ $firstName }}` by hand is the one place this editor still asks
+   * someone to know the syntax, and a mistyped brace renders as literal text in
+   * a sent email.
+   */
+  const insertVariable = (name) => {
+    const token = `{{ $${name} }}`;
+    const el = lastFocusedField.current;
+
+    if (!el || !el.id?.startsWith("field-")) {
+      setError("Click into the box you want the variable in first.");
+      return;
+    }
+
+    const key = el.id.slice("field-".length);
+    const current = fieldValues[key] ?? "";
+    const at = el.selectionStart ?? current.length;
+    const next = current.slice(0, at) + token + current.slice(el.selectionEnd ?? at);
+
+    setError("");
+    setFieldValues((curr) => ({ ...curr, [key]: next }));
+
+    // Put the caret after what was just inserted rather than at the end.
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(at + token.length, at + token.length);
+    });
   };
 
   const handleReset = async () => {
@@ -295,6 +400,7 @@ function EmailTemplatesPage() {
         fromAddress: restored.fromAddress || "",
         replyToAddress: restored.replyToAddress || "",
       });
+      setFieldValues(seedFields(restored.fields));
       setPreview(null);
       setNotice("Template restored to the bundled default.");
     } catch (err) {
@@ -373,17 +479,21 @@ function EmailTemplatesPage() {
                   </div>
                   <div className="mt-3 flex flex-wrap gap-2">
                     {detail.variables.map((v) => (
-                      <span
+                      <button
                         key={v.name}
+                        type="button"
                         title={v.description}
-                        className="rounded-md bg-slate-100 px-2 py-1 font-mono text-xs text-slate-700"
+                        onClick={() => insertVariable(v.name)}
+                        className="rounded-md bg-slate-100 px-2 py-1 font-mono text-xs text-slate-700 transition hover:bg-slate-900 hover:text-white"
                       >
                         {`{{ $${v.name} }}`}
-                      </span>
+                      </button>
                     ))}
                   </div>
                   <p className="mt-2.5 text-xs text-slate-500">
-                    Hover a variable to see what it contains. PHP and Blade
+                    Click a variable to drop it where your cursor is; the
+                    investor&rsquo;s own details replace it when the email is
+                    sent. Hover to see what each one contains. PHP and Blade
                     include/extends directives are not allowed.
                   </p>
                 </div>
@@ -460,53 +570,98 @@ function EmailTemplatesPage() {
                 />
               </div>
 
-              {/* Body editor */}
+              {/* Body */}
               <div className="rounded-xl border border-slate-200 bg-white">
-                <div className="flex items-center gap-1 border-b border-slate-200 px-3 pt-3">
-                  {TABS.map((t) => (
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-4 py-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                    {mode === "content" ? "Email content" : "Raw source"}
+                  </p>
+                  {detail.fields?.length ? (
                     <button
-                      key={t.id}
                       type="button"
-                      onClick={() => setTab(t.id)}
-                      className={`rounded-t-lg px-3.5 py-2 text-sm font-medium transition ${
-                        tab === t.id
-                          ? "bg-slate-900 text-white"
-                          : "text-slate-500 hover:text-slate-900"
-                      }`}
+                      onClick={() => setMode(mode === "content" ? "raw" : "content")}
+                      className="text-xs font-medium text-slate-500 underline underline-offset-2 hover:text-slate-900"
                     >
-                      {t.label}
+                      {mode === "content"
+                        ? "Advanced: edit the HTML"
+                        : "Back to editing the content"}
                     </button>
-                  ))}
+                  ) : null}
                 </div>
-                <div className="p-3">
-                  {tab === "html" ? (
-                    <textarea
-                      value={form.bodyHtml}
-                      onChange={(e) =>
-                        setForm((f) => ({ ...f, bodyHtml: e.target.value }))
-                      }
-                      spellCheck={false}
-                      rows={22}
-                      className="w-full resize-y rounded-lg border border-slate-200 p-3 font-mono text-xs leading-5 text-slate-800 outline-none focus:border-slate-900"
-                    />
-                  ) : (
-                    <>
-                      <textarea
-                        value={form.bodyText}
-                        onChange={(e) =>
-                          setForm((f) => ({ ...f, bodyText: e.target.value }))
+
+                {mode === "content" ? (
+                  <div className="space-y-4 p-4">
+                    <p className="text-xs leading-5 text-slate-500">
+                      Each box is one part of the letter. The layout, branding
+                      and spacing are fixed, so nothing you type here can break
+                      how the email looks. The plain-text version is rebuilt from
+                      these same words when you save.
+                    </p>
+                    {detail.fields.map((field) => (
+                      <ContentField
+                        key={field.key}
+                        field={field}
+                        value={fieldValues[field.key]}
+                        onChange={(key, value) =>
+                          setFieldValues((curr) => ({ ...curr, [key]: value }))
                         }
-                        spellCheck={false}
-                        rows={22}
-                        className="w-full resize-y rounded-lg border border-slate-200 p-3 font-mono text-xs leading-5 text-slate-800 outline-none focus:border-slate-900"
+                        onFocus={(e) => {
+                          lastFocusedField.current = e.target;
+                        }}
                       />
-                      <p className="mt-2 text-xs text-slate-500">
-                        Sent alongside the HTML version. Some clients show this
-                        instead, and a missing text part hurts deliverability.
-                      </p>
-                    </>
-                  )}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-1 border-b border-slate-200 px-3 pt-3">
+                      {TABS.map((t) => (
+                        <button
+                          key={t.id}
+                          type="button"
+                          onClick={() => setTab(t.id)}
+                          className={`rounded-t-lg px-3.5 py-2 text-sm font-medium transition ${
+                            tab === t.id
+                              ? "bg-slate-900 text-white"
+                              : "text-slate-500 hover:text-slate-900"
+                          }`}
+                        >
+                          {t.label}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="p-3">
+                      {tab === "html" ? (
+                        <textarea
+                          value={form.bodyHtml}
+                          onChange={(e) =>
+                            setForm((f) => ({ ...f, bodyHtml: e.target.value }))
+                          }
+                          spellCheck={false}
+                          rows={22}
+                          className="w-full resize-y rounded-lg border border-slate-200 p-3 font-mono text-xs leading-5 text-slate-800 outline-none focus:border-slate-900"
+                        />
+                      ) : (
+                        <>
+                          <textarea
+                            value={form.bodyText}
+                            onChange={(e) =>
+                              setForm((f) => ({ ...f, bodyText: e.target.value }))
+                            }
+                            spellCheck={false}
+                            rows={22}
+                            className="w-full resize-y rounded-lg border border-slate-200 p-3 font-mono text-xs leading-5 text-slate-800 outline-none focus:border-slate-900"
+                          />
+                          <p className="mt-2 text-xs text-slate-500">
+                            Sent alongside the HTML version. Some clients show
+                            this instead, and a missing text part hurts
+                            deliverability. Edited here it is yours to maintain;
+                            saving from the content view rebuilds it instead.
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Actions */}
