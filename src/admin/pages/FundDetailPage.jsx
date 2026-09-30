@@ -181,6 +181,7 @@ function DeclareDistributionForm({ fundCode, onDeclared }) {
 function FundProfileForm({ fund, onSaved }) {
   const [form, setForm] = useState({
     tagline: fund.tagline || "",
+    fundType: fund.fundType || "",
     investmentFocus: fund.investmentFocus || "",
     market: fund.market || "",
     targetYield: fund.targetYield || "",
@@ -198,6 +199,7 @@ function FundProfileForm({ fund, onSaved }) {
     try {
       await updateAdminFund(fund.code, {
         tagline: form.tagline.trim() || null,
+        fundType: form.fundType.trim() || null,
         investmentFocus: form.investmentFocus.trim() || null,
         market: form.market.trim() || null,
         targetYield: form.targetYield.trim() || null,
@@ -237,6 +239,8 @@ function FundProfileForm({ fund, onSaved }) {
         {field("targetYield", "Target yield", "8.0% target")}
         {field("investmentFocus", "Investment focus", "Residential Real Estate")}
         {field("market", "Market", "Greater Boston")}
+        {/* Shown in the portal as the "Structure" attribute row. */}
+        {field("fundType", "Structure", "Multi-Property Fund")}
       </div>
       <label className="block">
         <span className="text-[11px] uppercase tracking-[0.14em] text-gray-500">
