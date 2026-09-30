@@ -46,14 +46,13 @@ function PortalLayout({ investor, setInvestor }) {
             className="flex shrink-0 items-center gap-3"
             aria-label="Access Properties investor portal"
           >
-            {/* The asset is white-on-black with no transparency, so it needs
-                inverting to read as a dark mark on the white bar. */}
-            <img src="/assets/AP.png" alt="" className="h-8 w-auto invert md:h-9" />
-            <span className="text-[11px] font-medium uppercase leading-[1.35] tracking-[0.14em] text-[#111111]">
-              Access
-              <br />
-              Properties
-            </span>
+            {/* The brand lockup: AP mark and wordmark as one asset, rather
+                than the mark beside hand-set type. Its background is white and
+                the bar is #fff, so the two meet without a visible edge — which
+                is also why it cannot be reused on a dark surface. No alt: the
+                link above it is already labelled, so a second reading of the
+                name would only repeat it. */}
+            <img src="/assets/Logo.png" alt="" className="h-7 w-auto md:h-8" />
           </NavLink>
 
           {/* Below md the links would wrap into a block that lands on top of
