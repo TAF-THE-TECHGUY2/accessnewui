@@ -96,11 +96,23 @@ export function MetricStrip({ metrics, size = "md", cols = 4, className = "" }) 
               {m.sub}
             </p>
           ) : null}
+          {/* A standing qualification on the figure, not a value. Wraps rather
+              than truncating: the sentence is the point, and a clipped
+              disclosure is worse than none. */}
+          {m.footnote ? (
+            <p className="mt-1.5 text-[10px] leading-[1.45] text-[#9ca3af] md:text-[11px]">
+              {m.footnote}
+            </p>
+          ) : null}
         </div>
       ))}
     </div>
   );
 }
+
+/** Shown under every Total Return figure, wherever one appears. */
+export const TOTAL_RETURN_BASIS =
+  "Based on NAV; net of fund-level fees and expenses.";
 
 /**
  * Builds the four metrics both fund screens show, from one breakdown payload,
@@ -125,6 +137,10 @@ export function portfolioMetrics(totals, { currentValueNote } = {}) {
       color: gainColor(totals.gain),
       sub: formatPercent(totals.gainPct),
       subColor: gainColor(totals.gainPct),
+      // The unit price this is measured against is published net of fund
+      // expenses and fees, so the return is net too. Without saying so the
+      // figure reads as a gross number with a charge still to come.
+      footnote: TOTAL_RETURN_BASIS,
     },
     {
       label: "Units Held",

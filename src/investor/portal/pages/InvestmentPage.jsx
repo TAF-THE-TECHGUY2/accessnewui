@@ -18,6 +18,7 @@ import {
   FundGlyph,
   MetricStrip,
   portfolioMetrics,
+  TOTAL_RETURN_BASIS,
 } from "../components/PortalPrimitives";
 import {
   formatCurrencyDetailed,
@@ -247,6 +248,7 @@ function InvestmentPage() {
       color: gainColor(snapshot.gain),
       sub: formatPercent(snapshot.gainPct),
       subColor: gainColor(snapshot.gainPct),
+      footnote: TOTAL_RETURN_BASIS,
     },
     {
       label: "Units Held",
