@@ -22,6 +22,15 @@ export const getInvestorById = async (id) => {
   }
 };
 
+/**
+ * Corrects contact details. Separate from updateInvestorStatuses because the
+ * statuses endpoint validates a fixed list of enums and takes nothing else.
+ */
+export const updateInvestorDetails = async (id, updates) => {
+  const { data } = await api.patch(`/investors/${id}/details`, updates);
+  return data.data;
+};
+
 export const updateInvestorStatuses = async (id, updates) => {
   const { data } = await api.patch(`/investors/${id}/statuses`, updates);
   return data.data;

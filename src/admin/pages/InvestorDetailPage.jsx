@@ -8,6 +8,8 @@ import {
   Mail,
   MapPin,
   MessageSquare,
+  Loader2,
+  Pencil,
   Phone,
   Save,
   Trash2,
@@ -28,6 +30,7 @@ import RecordInvestmentPanel from "../components/RecordInvestmentPanel";
 import {
   deleteInvestor,
   getInvestorById,
+  updateInvestorDetails,
   updateInvestorStatuses,
 } from "../../services/adminService";
 import DestructiveDeleteModal from "../components/DestructiveDeleteModal";
@@ -76,6 +79,98 @@ function InfoRow({ label, value }) {
     </div>
   );
 }
+
+/**
+ * The phone number, corrected in place.
+ *
+ * Read-only until clicked, because this sits in a header of facts rather than
+ * a form, and an always-live input invites an accidental edit to a record the
+ * firm uses to reach someone about their money. Saving writes through the
+ * details endpoint, which touches nothing but this field.
+ */
+function EditablePhone({ investorId, value, onSaved }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value ?? "");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const start = () => {
+    setDraft(value ?? "");
+    setError("");
+    setEditing(true);
+  };
+
+  const save = async () => {
+    setSaving(true);
+    setError("");
+    try {
+      const updated = await updateInvestorDetails(investorId, { phone: draft });
+      onSaved(updated);
+      setEditing(false);
+    } catch (err) {
+      setError(
+        err?.response?.data?.errors?.phone?.[0] ||
+          err?.response?.data?.message ||
+          "Could not save that number.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!editing) {
+    return (
+      <div className="flex items-center gap-2">
+        <Phone className="h-4 w-4 shrink-0 text-teal-700" />
+        <span className="truncate">{value || "No number on file"}</span>
+        <button
+          type="button"
+          onClick={start}
+          aria-label="Edit phone number"
+          className="shrink-0 rounded p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-900"
+        >
+          <Pencil className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center gap-2">
+        <Phone className="h-4 w-4 shrink-0 text-teal-700" />
+        <input
+          autoFocus
+          type="tel"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") save();
+            if (e.key === "Escape") setEditing(false);
+          }}
+          className="h-8 min-w-0 flex-1 rounded-md border border-slate-300 px-2 text-sm text-slate-900 outline-none focus:border-slate-900"
+        />
+        <button
+          type="button"
+          onClick={save}
+          disabled={saving}
+          className="shrink-0 rounded-md bg-slate-900 px-2.5 py-1 text-xs font-medium text-white disabled:opacity-50"
+        >
+          {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Save"}
+        </button>
+        <button
+          type="button"
+          onClick={() => setEditing(false)}
+          className="shrink-0 rounded-md px-2 py-1 text-xs text-slate-500 hover:text-slate-900"
+        >
+          Cancel
+        </button>
+      </div>
+      {error ? <p className="pl-6 text-xs text-rose-600">{error}</p> : null}
+    </div>
+  );
+}
+
 
 function InvestorDetailPage() {
   const { id } = useParams();
@@ -179,10 +274,11 @@ function InvestorDetailPage() {
               <span className="truncate">{investor.email}</span>
             </div>
 
-            <div className="flex items-center gap-2">
-              <Phone className="h-4 w-4 text-teal-700" />
-              <span>{investor.phone}</span>
-            </div>
+            <EditablePhone
+              investorId={investor.id}
+              value={investor.phone}
+              onSaved={(updated) => setInvestor(updated)}
+            />
 
             <div className="flex items-center gap-2">
               <Globe className="h-4 w-4 text-teal-700" />
