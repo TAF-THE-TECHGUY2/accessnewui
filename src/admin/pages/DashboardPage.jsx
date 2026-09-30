@@ -6,8 +6,8 @@ import {
   Clock3,
   FileText,
   Mail,
+  Layers,
   ShieldAlert,
-  UserCheck,
   Users,
   Wallet,
 } from "lucide-react";
@@ -24,6 +24,7 @@ import {
   formatDateTime,
   formatNumber,
   formatStatusLabel,
+  formatUnits,
   getInitials,
 } from "../../utils/formatters";
 
@@ -195,11 +196,10 @@ function DashboardPage() {
           icon={Wallet}
         />
         <StatCard
-          label="Active Investors"
-          value={formatNumber(metrics.activeInvestors)}
-          hint="Investor dashboards currently active"
-          delta="+15 this week"
-          icon={UserCheck}
+          label="Total Units"
+          value={formatUnits(metrics.totalUnits)}
+          hint="Units currently in issue across all investors"
+          icon={Layers}
         />
       </section>
 

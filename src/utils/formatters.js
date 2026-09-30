@@ -10,6 +10,17 @@ export const formatNumber = (value = 0) =>
     maximumFractionDigits: 0,
   }).format(value);
 
+/**
+ * Units are held to six decimals in the ledger and shown to two everywhere an
+ * investor sees them. formatNumber would round them to whole units, which for
+ * a holding of 7,547.169811 is a different number.
+ */
+export const formatUnits = (value = 0) =>
+  new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value ?? 0);
+
 export const formatDate = (
   value,
   options = { month: "short", day: "numeric", year: "numeric" }
