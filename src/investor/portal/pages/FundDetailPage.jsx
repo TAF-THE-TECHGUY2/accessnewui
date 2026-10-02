@@ -10,6 +10,7 @@ import {
 } from "recharts";
 import {
   AlertTriangle,
+  ChevronDown,
   DollarSign,
   Info,
   Percent,
@@ -814,6 +815,19 @@ function FundDetailPage() {
     };
   }, [panel, code]);
 
+  /**
+   * What the investor is charged, as opposed to attributed.
+   *
+   * Every fee is levied on the fund and settled by the fund; what reaches an
+   * investor is a share already inside the unit price, never an invoice. So
+   * while that holds the answer is zero — read from the policy flag the API
+   * sends rather than written into the sentence, so the figure follows the
+   * policy if it ever stops holding instead of quietly becoming a lie.
+   */
+  const directFees = fees.alreadyNetOfFees
+    ? 0
+    : (fees.totalAum ?? 0) + (fees.totalPerformance ?? 0);
+
   if (loading) {
     return <p className="text-sm text-[#6b7280]">Loading fund…</p>;
   }
@@ -1015,71 +1029,96 @@ function FundDetailPage() {
                     Fees
                   </h3>
 
-                  {/* The fund publishes a unit price already net of all fund expenses
-                    and fees, so the returns above are net too. Saying so is not
-                    decoration: without it these figures read as a charge still to
-                    come, and an investor subtracting them again would understate
-                    their own position. */}
-                  <div className="mt-3 flex items-start gap-3 rounded-[14px] border border-black/10 bg-[#f7f5f1] p-4">
-                    <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#6b7280]" />
-                    <div className="text-[13px] leading-6 text-[#1f2937]">
-                      <p>
-                        <strong>
-                          These figures are for transparency only.
-                        </strong>{" "}
-                        Fees are charged at fund level and paid by the fund.
+                  {/* The question an investor opens this panel to answer is
+                      "what am I being charged?". It gets answered first and
+                      plainly, before anything that could be mistaken for a bill.
+
+                      Both numbers are read from data rather than written into
+                      the copy. A rate the accountant changes has to change here
+                      too, and a sentence is the one place a stale figure can
+                      sit for years without anyone noticing. */}
+                  <p className="mt-3 text-[15px] font-medium text-[#111111] md:text-[16px]">
+                    Fees charged directly to you:{" "}
+                    <span className="tabular-nums">
+                      {formatCurrencyDetailed(directFees)}
+                    </span>
+                  </p>
+                  {fees.aumRatePct != null ? (
+                    <p className="mt-1.5 text-[13px] leading-6 text-[#4b5563]">
+                      Fund-level management fee: {fees.aumRatePct.toFixed(2)}%
+                      annually, reflected in NAV.
+                    </p>
+                  ) : null}
+
+                  {fees.alreadyNetOfFees ? (
+                    <div className="mt-4 flex items-start gap-3 rounded-[14px] border border-black/10 bg-[#f7f5f1] p-4">
+                      <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#6b7280]" />
+                      <p className="text-[13px] leading-6 text-[#1f2937]">
+                        The unit price your position is valued at is already net
+                        of all fund expenses and fees, so your returns are net
+                        too. The figures below are shown so the fund-level fee
+                        can be checked, not because anything is owed — do not
+                        subtract them again.
                       </p>
-                      {fees.alreadyNetOfFees ? (
-                        <p className="mt-1.5 text-[#4b5563]">
-                          The unit price your position is valued at is already
-                          net of all fund expenses and fees, so your returns
-                          above are also net. Do not subtract the amounts below
-                          again — they are already reflected.
-                        </p>
-                      ) : null}
                     </div>
-                  </div>
+                  ) : null}
 
-                  <dl className="mt-4 grid gap-5 sm:grid-cols-3">
-                    <Field
-                      label="Rate"
-                      value={
-                        fees.aumRatePct != null
-                          ? `${fees.aumRatePct.toFixed(2)}% per year`
-                          : "—"
-                      }
-                      hint="of gross asset value, charged quarterly"
-                    />
-                    <Field
-                      label="Your AUM fees to date"
-                      value={formatCurrencyDetailed(fees.totalAum)}
-                      hint={`${fees.aum?.length ?? 0} period${(fees.aum?.length ?? 0) === 1 ? "" : "s"}`}
-                    />
-                    <Field
-                      label="Your performance fees to date"
-                      value={formatCurrencyDetailed(fees.totalPerformance)}
-                    />
-                  </dl>
+                  {/* Folded away by default. It is the audit trail behind the
+                      rate above, and the fund manager reconciles it against his
+                      workbook — but sitting open beneath "charged directly to
+                      you: $0.00" it reads as a contradiction, which is how an
+                      investor ends up subtracting a fee they never paid. */}
+                  <details className="group mt-4 rounded-[14px] border border-black/10">
+                    <summary className="cursor-pointer list-none px-4 py-3 text-[13px] font-medium text-[#111111]">
+                      <span className="inline-flex items-center gap-2">
+                        <ChevronDown className="h-4 w-4 transition group-open:rotate-180" />
+                        How the fund-level fee was allocated
+                      </span>
+                    </summary>
 
-                  {/* Each period shows the fund's total and the share it was split
-                    by, so the investor's own figure can be checked rather than
-                    taken on trust. */}
-                  <div className="mt-4">
-                    <MiniTable
-                      head={["Period", "Fund total", "Your share", "Your fee"]}
-                      rows={(fees.aum || []).map((r) => [
-                        `${r.periodStart} → ${r.periodEnd}`,
-                        r.fundTotal != null
-                          ? formatCurrencyDetailed(r.fundTotal)
-                          : "—",
-                        r.ownershipPct != null
-                          ? `${r.ownershipPct.toFixed(3)}%`
-                          : "—",
-                        formatCurrencyDetailed(r.amount),
-                      ])}
-                      empty="No AUM fees have been allocated yet."
-                    />
-                  </div>
+                    <div className="border-t border-black/10 px-4 py-4">
+                      <dl className="grid gap-5 sm:grid-cols-3">
+                        <Field
+                          label="Rate"
+                          value={
+                            fees.aumRatePct != null
+                              ? `${fees.aumRatePct.toFixed(2)}% per year`
+                              : "—"
+                          }
+                          hint="of gross asset value, charged quarterly"
+                        />
+                        <Field
+                          label="Your share of fund-level fees"
+                          value={formatCurrencyDetailed(fees.totalAum)}
+                          hint={`${fees.aum?.length ?? 0} period${(fees.aum?.length ?? 0) === 1 ? "" : "s"} — paid by the fund, not by you`}
+                        />
+                        <Field
+                          label="Your share of performance fees"
+                          value={formatCurrencyDetailed(fees.totalPerformance)}
+                        />
+                      </dl>
+
+                      {/* Each period shows the fund's total and the share it was
+                        split by, so the investor's own figure can be checked
+                        rather than taken on trust. */}
+                      <div className="mt-4">
+                        <MiniTable
+                          head={["Period", "Fund total", "Your share", "Your fee"]}
+                          rows={(fees.aum || []).map((r) => [
+                            `${r.periodStart} → ${r.periodEnd}`,
+                            r.fundTotal != null
+                              ? formatCurrencyDetailed(r.fundTotal)
+                              : "—",
+                            r.ownershipPct != null
+                              ? `${r.ownershipPct.toFixed(3)}%`
+                              : "—",
+                            formatCurrencyDetailed(r.amount),
+                          ])}
+                          empty="No AUM fees have been allocated yet."
+                        />
+                      </div>
+                    </div>
+                  </details>
                 </>
               ) : null}
             </section>
