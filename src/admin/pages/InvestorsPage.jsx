@@ -25,7 +25,12 @@ import StatusBadge from "../components/StatusBadge";
 import ActionMenu from "../components/ActionMenu";
 import CreateInvestorModal from "../components/CreateInvestorModal";
 import { getInvestors, updateInvestorStatuses } from "../../services/adminService";
-import { formatCurrency, formatDate, getInitials } from "../../utils/formatters";
+import {
+  accreditationDisplayStatus,
+  formatCurrency,
+  formatDate,
+  getInitials,
+} from "../../utils/formatters";
 
 const blankStatuses = {
   kycStatus: "pending",
@@ -140,7 +145,12 @@ function InvestorsPage() {
       {
         header: "Accreditation",
         cell: ({ row }) => (
-          <StatusBadge status={row.original.accreditationStatus} />
+          <StatusBadge
+            status={accreditationDisplayStatus(
+              row.original.accreditationStatus,
+              row.original.isManagingMember,
+            )}
+          />
         ),
       },
       {
@@ -330,6 +340,7 @@ function InvestorsPage() {
               >
                 <option value="">All types</option>
                 <option value="accredited">Accredited</option>
+                <option value="managing_member">Managing Member</option>
                 <option value="non_accredited">Non accredited</option>
               </select>
             </label>

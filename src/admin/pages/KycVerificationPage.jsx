@@ -16,7 +16,12 @@ import {
   getKycQueue,
   updateKycReview,
 } from "../../services/adminService";
-import { formatDate, formatDateTime, getInitials } from "../../utils/formatters";
+import {
+  accreditationDisplayStatus,
+  formatDate,
+  formatDateTime,
+  getInitials,
+} from "../../utils/formatters";
 
 function KycVerificationPage() {
   const [queue, setQueue] = useState([]);
@@ -79,7 +84,12 @@ function KycVerificationPage() {
       {
         header: "Accreditation",
         cell: ({ row }) => (
-          <StatusBadge status={row.original.accreditationStatus} />
+          <StatusBadge
+            status={accreditationDisplayStatus(
+              row.original.accreditationStatus,
+              row.original.isManagingMember,
+            )}
+          />
         ),
       },
       {
@@ -265,7 +275,12 @@ function KycVerificationPage() {
                 </div>
                 <div className="mt-4 flex flex-wrap gap-2">
                   <StatusBadge status={selectedRecord.kycStatus} />
-                  <StatusBadge status={selectedRecord.accreditationStatus} />
+                  <StatusBadge
+                    status={accreditationDisplayStatus(
+                      selectedRecord.accreditationStatus,
+                      selectedRecord.isManagingMember,
+                    )}
+                  />
                 </div>
               </div>
 

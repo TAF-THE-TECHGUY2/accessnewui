@@ -31,6 +31,13 @@ export const updateInvestorDetails = async (id, updates) => {
   return data.data;
 };
 
+export const updateManagingMember = async (id, isManagingMember) => {
+  const { data } = await api.patch(`/investors/${id}/managing-member`, {
+    isManagingMember,
+  });
+  return data.data;
+};
+
 export const updateInvestorStatuses = async (id, updates) => {
   const { data } = await api.patch(`/investors/${id}/statuses`, updates);
   return data.data;

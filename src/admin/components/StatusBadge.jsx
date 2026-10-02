@@ -19,6 +19,7 @@ const badgeStyles = {
   partner_match_pending: "bg-[#edf0fb] text-[#5e6ea8]",
   partner_match_complete: "bg-[#ddeefe] text-[#3f78a3]",
   accredited: "bg-[#e7f4eb] text-[#4d8a63]",
+  managing_member: "bg-[#e3eef0] text-[#0f4f4f]",
   non_accredited: "bg-[#f8eee0] text-[#b77d38]",
   not_started: "bg-[#ece8e2] text-[#7b746a]",
   verification_required: "bg-[#faeddc] text-[#b7772f]",

@@ -18,6 +18,7 @@ import {
   fetchPortalProfile,
   updatePortalProfile,
 } from "../../../services/investorPortalService";
+import { accreditationDisplayStatus } from "../../../utils/formatters";
 
 // Ordered to read across the two columns as pairs: name beside phone, the two
 // address lines together, city beside state, postcode beside country.
@@ -36,7 +37,7 @@ const READONLY_FIELDS = [
   { key: "email", label: "Login email" },
   { key: "investorType", label: "Investor type" },
   { key: "entityName", label: "Entity name" },
-  { key: "accreditationStatus", label: "Accreditation status", format: "status" },
+  { key: "accreditationStatus", label: "Accreditation status", format: "accreditation" },
   { key: "residency", label: "Residency" },
   { key: "taxIdLast4", label: "Tax ID (last 4)" },
   { key: "code", label: "Investor reference" },
@@ -86,6 +87,9 @@ function StatusCell({ icon: Icon, label, value, confirmed }) {
 
 function StatusStrip({ status, documents }) {
   const accreditation = status?.accreditation;
+  const managingMember =
+    accreditationDisplayStatus(accreditation, status?.isManagingMember) ===
+    "managing_member";
   const kyc = status?.kyc;
 
   // portal_documents carries no signing state, so completeness cannot be
@@ -102,7 +106,7 @@ function StatusStrip({ status, documents }) {
     <section className="grid divide-y divide-black/10 rounded-[22px] border border-black/10 bg-white shadow-[0_10px_30px_rgba(15,61,62,0.06)] sm:grid-cols-3 sm:divide-y-0 sm:divide-x">
       <StatusCell
         icon={ShieldCheck}
-        label="Accredited"
+        label={managingMember ? "Managing Member" : "Accredited"}
         value={titleCase(accreditation) || "Not on file"}
         confirmed={/^(accredited|confirmed|verified|approved)$/i.test(accreditation || "")}
       />
@@ -536,9 +540,13 @@ function ProfilePage() {
             const value =
               field.format === "date" && raw
                 ? new Date(raw).toLocaleDateString()
-                : field.format === "status"
-                  ? titleCase(raw)
-                  : raw;
+                : field.format === "accreditation"
+                  ? titleCase(
+                      accreditationDisplayStatus(raw, readonly.isManagingMember),
+                    )
+                  : field.format === "status"
+                    ? titleCase(raw)
+                    : raw;
             return (
               <Field key={field.key} label={field.label} locked>
                 {value ? String(value) : <span className="text-[#9ca3af]">—</span>}

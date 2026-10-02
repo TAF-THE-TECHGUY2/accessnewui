@@ -48,6 +48,14 @@ export const formatStatusLabel = (value = "") =>
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
 
+/**
+ * What an investor's accreditation reads as. A Managing Member is still
+ * accredited underneath — every pathway and document decision keys on the raw
+ * status — so this only swaps the label, and only for display.
+ */
+export const accreditationDisplayStatus = (status, isManagingMember) =>
+  isManagingMember && status === "accredited" ? "managing_member" : status;
+
 export const getInitials = (name = "") =>
   name
     .split(" ")

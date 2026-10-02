@@ -33,7 +33,11 @@ import {
   startPersonaVerification,
   startVerifyInvestorReview,
 } from "../../services/adminService";
-import { formatCurrency, formatDateTime } from "../../utils/formatters";
+import {
+  accreditationDisplayStatus,
+  formatCurrency,
+  formatDateTime,
+} from "../../utils/formatters";
 
 const ACCREDITED_STEPS = [
   {
@@ -355,7 +359,12 @@ function InvestorProcessingPanel({ investor, onInvestorUpdated }) {
 
           <div className="flex flex-col items-start gap-3 md:items-end">
             <div className="flex flex-wrap gap-2">
-              <StatusBadge status={investor.accreditationStatus} />
+              <StatusBadge
+                status={accreditationDisplayStatus(
+                  investor.accreditationStatus,
+                  investor.isManagingMember,
+                )}
+              />
               <StatusBadge status={currentStatus} />
               <StatusBadge status={investor.dashboardStatus} />
             </div>

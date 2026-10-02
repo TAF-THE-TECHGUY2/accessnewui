@@ -19,6 +19,7 @@ import LoadingState from "../components/LoadingState";
 import StatusBadge from "../components/StatusBadge";
 import { getDashboardSummary } from "../../services/adminService";
 import {
+  accreditationDisplayStatus,
   formatCurrency,
   formatDate,
   formatDateTime,
@@ -121,7 +122,12 @@ function DashboardPage() {
       {
         header: "Accreditation",
         cell: ({ row }) => (
-          <StatusBadge status={row.original.accreditationStatus} />
+          <StatusBadge
+            status={accreditationDisplayStatus(
+              row.original.accreditationStatus,
+              row.original.isManagingMember,
+            )}
+          />
         ),
       },
       {

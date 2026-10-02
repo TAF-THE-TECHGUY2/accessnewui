@@ -32,9 +32,11 @@ import {
   getInvestorById,
   updateInvestorDetails,
   updateInvestorStatuses,
+  updateManagingMember,
 } from "../../services/adminService";
 import DestructiveDeleteModal from "../components/DestructiveDeleteModal";
 import {
+  accreditationDisplayStatus,
   formatCurrency,
   formatDate,
   formatDateTime,
@@ -171,6 +173,97 @@ function EditablePhone({ investorId, value, onSaved }) {
   );
 }
 
+/**
+ * Mark or unmark the investor as a Managing Member.
+ *
+ * Two clicks, not a toggle: the label shows on the investor's own profile, so
+ * an accidental change is visible to them. Only the label moves — they stay on
+ * the accredited pathway either way — and the API refuses it for anyone who is
+ * not accredited.
+ */
+function ManagingMemberControl({ investor, onSaved }) {
+  const [confirming, setConfirming] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const flagged = Boolean(investor.isManagingMember);
+  const eligible = investor.accreditationStatus === "accredited";
+
+  const apply = async () => {
+    setSaving(true);
+    setError("");
+    try {
+      const updated = await updateManagingMember(investor.id, !flagged);
+      onSaved(updated);
+      setConfirming(false);
+    } catch (err) {
+      setError(
+        err?.response?.data?.errors?.isManagingMember?.[0] ||
+          err?.response?.data?.message ||
+          "Could not update the Managing Member designation.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="rounded-[16px] border border-[#eadfd2] bg-[#fcfaf7] p-4">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-ink">Managing Member</p>
+          <p className="mt-0.5 text-xs text-slate-500">
+            {flagged
+              ? "Shown as Managing Member in place of Accredited."
+              : eligible
+                ? "Show this investor as a Managing Member."
+                : "Only accredited investors can be marked."}
+          </p>
+        </div>
+        {flagged ? <StatusBadge status="managing_member" /> : null}
+      </div>
+
+      {confirming ? (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <span className="text-xs text-slate-600">
+            {flagged
+              ? `Remove the Managing Member designation from ${investor.name}?`
+              : `Mark ${investor.name} as a Managing Member?`}
+          </span>
+          <button
+            type="button"
+            onClick={apply}
+            disabled={saving}
+            className="rounded-md bg-slate-900 px-2.5 py-1 text-xs font-medium text-white disabled:opacity-50"
+          >
+            {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Confirm"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setConfirming(false)}
+            className="rounded-md px-2 py-1 text-xs text-slate-500 hover:text-slate-900"
+          >
+            Cancel
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => {
+            setError("");
+            setConfirming(true);
+          }}
+          disabled={!flagged && !eligible}
+          className="mt-3 inline-flex items-center rounded-[12px] border border-[#eadfd2] bg-white px-3 py-1.5 text-xs font-semibold text-teal-800 transition hover:bg-[#edf6f4] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {flagged ? "Remove Managing Member" : "Mark as Managing Member"}
+        </button>
+      )}
+
+      {error ? <p className="mt-2 text-xs text-rose-600">{error}</p> : null}
+    </div>
+  );
+}
 
 function InvestorDetailPage() {
   const { id } = useParams();
@@ -261,6 +354,12 @@ function InvestorDetailPage() {
               </h1>
 
               <div className="mt-3 flex flex-wrap gap-2">
+                <StatusBadge
+                  status={accreditationDisplayStatus(
+                    investor.accreditationStatus,
+                    investor.isManagingMember,
+                  )}
+                />
                 <StatusBadge status={investor.kycStatus} />
                 <StatusBadge status={investor.investmentStatus} />
                 <StatusBadge status={investor.dashboardStatus} />
@@ -339,6 +438,11 @@ function InvestorDetailPage() {
 
           <DetailCard icon={ShieldCheck} title="Status Management">
             <div className="space-y-4">
+              <ManagingMemberControl
+                investor={investor}
+                onSaved={(updated) => setInvestor(updated)}
+              />
+
               <div>
                 <label className="mb-2 block text-sm font-semibold text-ink">
                   KYC Status
