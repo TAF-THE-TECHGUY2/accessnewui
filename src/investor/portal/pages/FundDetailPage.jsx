@@ -773,17 +773,27 @@ function FundDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code]);
 
-  // Reset on navigation between funds, or the previous fund's properties would
-  // show under the new one until its own fetch resolved.
+  /**
+   * Properties are fetched when the Holdings panel opens, not with the page —
+   * most visits never open it, and it costs two upstream calls.
+   *
+   * `panel` and `code` are the only dependencies, and that is load-bearing.
+   * With `properties.status` also listed, the effect re-ran the moment it set
+   * the status to "loading": React then ran the *previous* run's cleanup,
+   * which flipped `cancelled` on the request that run had just started. The
+   * response arrived to a closure that had been told to ignore it, nothing
+   * ever moved the status off "loading", and the panel sat on "Loading
+   * properties…" for good. Opening it reset nothing, because the state it
+   * would have to reset was the state keeping it stuck.
+   *
+   * Setting "loading" unconditionally also means reopening the panel refetches
+   * rather than showing the previous fund's list while the new one loads.
+   */
   useEffect(() => {
-    setProperties({ status: "idle", data: [], unavailable: null });
-  }, [code]);
-
-  useEffect(() => {
-    if (panel !== "holdings" || properties.status !== "idle") return;
+    if (panel !== "holdings") return undefined;
 
     let cancelled = false;
-    setProperties((p) => ({ ...p, status: "loading" }));
+    setProperties({ status: "loading", data: [], unavailable: null });
 
     fetchHoldingProperties(code)
       .then(({ data, unavailable }) => {
@@ -802,7 +812,7 @@ function FundDetailPage() {
     return () => {
       cancelled = true;
     };
-  }, [panel, code, properties.status]);
+  }, [panel, code]);
 
   if (loading) {
     return <p className="text-sm text-[#6b7280]">Loading fund…</p>;

@@ -324,6 +324,40 @@ test.describe("Investment figures, end to end through the UI", () => {
     });
   });
 
+  test("View Holdings resolves rather than loading forever", async ({ page }) => {
+    await page.goto(`${BASE}/login`);
+    await page.getByPlaceholder("name@email.com").fill(INVESTOR_EMAIL);
+    await page.locator('input[type="password"]').fill(INVESTOR_PASSWORD);
+    await page.getByRole("button", { name: /sign in/i }).click();
+    await page.waitForURL(/\/dashboard/, { timeout: 20000 });
+
+    await page.getByRole("link", { name: /view details/i }).first().click();
+    await page.waitForURL(/\/dashboard\/funds\//, { timeout: 20000 });
+
+    await page.getByText("View Holdings").first().click();
+    await expect(page.getByRole("heading", { name: "Holdings" })).toBeVisible();
+
+    // The regression this guards: the fetch effect listed properties.status in
+    // its dependencies, so setting the status to "loading" re-ran the effect,
+    // which fired the previous run's cleanup and cancelled the request it had
+    // just started. The response was ignored and the panel sat here for good.
+    await expect(page.getByText("Loading properties\u2026")).toHaveCount(0, {
+      timeout: 30000,
+    });
+
+    // What it settles on depends on the environment — properties, an empty
+    // fund, or a stated reason the feed is unavailable. Any of those is a
+    // resolved panel; none of them is the spinner.
+    await expect(
+      page
+        .getByRole("article")
+        .or(page.getByText(/No properties are recorded/))
+        .or(page.getByText(/property feed is not connected/))
+        .or(page.getByText(/could not be loaded/))
+        .first(),
+    ).toBeVisible({ timeout: 20000 });
+  });
+
   test.afterAll(async () => {
     if (investorCode) {
       console.log(
