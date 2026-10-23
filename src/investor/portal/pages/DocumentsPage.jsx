@@ -4,6 +4,7 @@ import {
   Calculator,
   ChevronDown,
   Download,
+  FileCheck,
   Eye,
   FileText,
   Folder,
@@ -14,7 +15,8 @@ import {
 
 import {
   downloadPortalDocument,
-  fetchPortalDocuments,
+  downloadSignedAgreement,
+  fetchPortalDocumentsWithSigned,
   openPortalDocument,
 } from "../../../services/investorPortalService";
 
@@ -332,8 +334,85 @@ function Select({ label, value, options, onChange }) {
   );
 }
 
+/**
+ * The investor's own executed agreements, first on the page: what they signed
+ * is what they come here for most.
+ */
+function SignedAgreements({ agreements }) {
+  const [busy, setBusy] = useState(null);
+  const [error, setError] = useState("");
+
+  const download = async (agreement) => {
+    setBusy(agreement.id);
+    setError("");
+    try {
+      await downloadSignedAgreement(agreement);
+    } catch (err) {
+      // A blob error body has to be read before its message is usable.
+      let message = "Could not download that document.";
+      try {
+        message = JSON.parse(await err?.response?.data?.text())?.message || message;
+      } catch {
+        // keep the generic message
+      }
+      setError(message);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <section className="rounded-[22px] border border-black/10 bg-white p-6 shadow-[0_10px_30px_rgba(15,61,62,0.06)]">
+      <div className="flex items-start gap-3">
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#e7f4eb] text-[#4d8a63]">
+          <FileCheck className="h-5 w-5" />
+        </span>
+        <div>
+          <h2 className="font-display text-[20px] leading-tight text-[#111111]">
+            Your signed documents
+          </h2>
+          <p className="mt-0.5 text-[13px] text-[#6b7280]">
+            Agreements you have signed, countersigned by the fund.
+          </p>
+        </div>
+      </div>
+
+      {agreements.length === 0 ? (
+        <p className="mt-4 text-[13px] text-[#6b7280]">
+          Nothing signed yet. Your subscription agreement appears here once you
+          and the fund have both signed it.
+        </p>
+      ) : (
+        <ul className="mt-4 divide-y divide-black/5">
+          {agreements.map((a) => (
+            <li key={a.id} className="flex items-center justify-between gap-3 py-3">
+              <div className="min-w-0">
+                <p className="truncate text-[14px] font-medium text-[#111111]">{a.title}</p>
+                <p className="text-[12px] text-[#6b7280]">
+                  Signed {formatDate(a.completedAt || a.signedAt) || "—"}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => download(a)}
+                disabled={busy === a.id}
+                className="inline-flex h-9 shrink-0 items-center gap-2 rounded-[10px] border border-black/15 px-3 text-[13px] font-medium text-[#111111] transition hover:bg-[#fafafa] disabled:opacity-60"
+              >
+                <Download className="h-4 w-4" />
+                Download
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {error ? <p className="mt-2 text-[12px] text-red-700">{error}</p> : null}
+    </section>
+  );
+}
+
 function DocumentsPage() {
   const [docs, setDocs] = useState(null);
+  const [signed, setSigned] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -344,8 +423,11 @@ function DocumentsPage() {
   const [collapsed, setCollapsed] = useState({});
 
   useEffect(() => {
-    fetchPortalDocuments()
-      .then(setDocs)
+    fetchPortalDocumentsWithSigned()
+      .then(({ grouped, signed: agreements }) => {
+        setDocs(grouped);
+        setSigned(agreements);
+      })
       .catch((err) =>
         setError(err?.response?.data?.message || "Could not load documents."),
       )
@@ -400,6 +482,8 @@ function DocumentsPage() {
 
   return (
     <div className="space-y-5">
+      <SignedAgreements agreements={signed} />
+
       <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_repeat(3,180px)]">
         <div className="relative">
           <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9ca3af]" />

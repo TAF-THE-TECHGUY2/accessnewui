@@ -207,6 +207,35 @@ export const fetchPortalDocuments = async () => {
   return data.data;
 };
 
+/**
+ * The same request, with the investor's own signed agreements alongside. Kept
+ * separate because callers that walk every category of fetchPortalDocuments()
+ * would otherwise list the signed set as one more category.
+ */
+export const fetchPortalDocumentsWithSigned = async () => {
+  const { data } = await investorApi.get("/portal/documents");
+  return { grouped: data.data, signed: data.signed || [] };
+};
+
+export const downloadSignedAgreement = async (agreement) => {
+  const response = await investorApi.get(
+    `/portal/agreements/${agreement.id}/download`,
+    { responseType: "blob" }
+  );
+  // Typed here rather than trusting the response: a blob URL runs on this
+  // origin, so it must never open as anything but a PDF.
+  const blobUrl = window.URL.createObjectURL(
+    new Blob([response.data], { type: "application/pdf" })
+  );
+  const link = window.document.createElement("a");
+  link.href = blobUrl;
+  link.download = `${(agreement.title || "agreement").replace(/\s+/g, "-").toLowerCase()}-signed.pdf`;
+  window.document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(blobUrl);
+};
+
 export const downloadPortalDocument = async (document) => {
   const response = await investorApi.get(
     `/portal/documents/${document.id}/download`,
