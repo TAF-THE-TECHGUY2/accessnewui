@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft, Eye, EyeOff, Loader2 } from "lucide-react";
 
-import { login } from "../../services/investorPortalService";
+import { completeTwoFactorLogin, login } from "../../services/investorPortalService";
+import TwoFactorChallenge from "../../components/security/TwoFactorChallenge";
 import { fetchPublicSettings } from "../../services/investorService";
 
 function LoginPage() {
@@ -15,6 +16,8 @@ function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  // Set once the password is right and the account needs a code.
+  const [challenge, setChallenge] = useState(null);
   // Where the Back link points, set by an admin under Settings -> Sign-in page.
   // Empty means they want no link, so nothing renders.
   const [backUrl, setBackUrl] = useState("");
@@ -41,7 +44,11 @@ function LoginPage() {
     setSubmitting(true);
     setError(null);
     try {
-      await login({ email, password });
+      const result = await login({ email, password });
+      if (result?.twoFactorRequired) {
+        setChallenge(result.challenge);
+        return;
+      }
       navigate(from, { replace: true });
     } catch (err) {
       const message =
@@ -49,6 +56,23 @@ function LoginPage() {
         err?.message ||
         "Unable to sign in. Check your credentials.";
       setError(message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleCode = async (codeInput) => {
+    setSubmitting(true);
+    setError(null);
+    try {
+      await completeTwoFactorLogin({ challenge, ...codeInput });
+      navigate(from, { replace: true });
+    } catch (err) {
+      if (err?.response?.data?.code === "challenge_expired") {
+        setChallenge(null);
+        setPassword("");
+      }
+      setError(err?.response?.data?.message || "That code did not work.");
     } finally {
       setSubmitting(false);
     }
@@ -76,6 +100,20 @@ function LoginPage() {
           account.
         </p>
 
+        {challenge ? (
+          <div className="mt-8 w-full rounded-[20px] bg-white p-7 shadow-[0_18px_40px_rgba(17,24,39,0.08)]">
+            <TwoFactorChallenge
+              onSubmit={handleCode}
+              onCancel={() => {
+                setChallenge(null);
+                setPassword("");
+                setError(null);
+              }}
+              submitting={submitting}
+              error={error}
+            />
+          </div>
+        ) : (
         <form
           onSubmit={handleSubmit}
           className="mt-8 w-full rounded-[20px] bg-white p-7 shadow-[0_18px_40px_rgba(17,24,39,0.08)]"
@@ -157,6 +195,7 @@ function LoginPage() {
             </a>
           ) : null}
         </form>
+        )}
 
         <p className="mt-6 text-center text-[13px] text-[#6b7280]">
           New to the accredited investor pathway?{" "}

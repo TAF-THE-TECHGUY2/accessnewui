@@ -32,6 +32,7 @@ import {
   getInvestorById,
   updateInvestorDetails,
   updateInvestorStatuses,
+  resetInvestorTwoFactor,
   updateManagingMember,
 } from "../../services/adminService";
 import DestructiveDeleteModal from "../components/DestructiveDeleteModal";
@@ -265,6 +266,76 @@ function ManagingMemberControl({ investor, onSaved }) {
   );
 }
 
+/**
+ * For an investor who has lost their phone and their recovery codes. Shown only
+ * while they have two-factor on; resetting lets them sign in with just their
+ * password and set it up again from their profile.
+ */
+function TwoFactorResetControl({ investor, onSaved }) {
+  const [confirming, setConfirming] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  if (!investor.twoFactorEnabled) return null;
+
+  const reset = async () => {
+    setSaving(true);
+    setError("");
+    try {
+      onSaved(await resetInvestorTwoFactor(investor.id));
+      setConfirming(false);
+    } catch (err) {
+      setError(err?.response?.data?.message || "Could not reset two-factor sign-in.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="rounded-[16px] border border-[#eadfd2] bg-[#fcfaf7] p-4">
+      <p className="text-sm font-semibold text-ink">Two-factor sign-in</p>
+      <p className="mt-0.5 text-xs text-slate-500">
+        On. Reset only if they have lost their phone and recovery codes — confirm
+        who you are speaking to first.
+      </p>
+      {confirming ? (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <span className="text-xs text-slate-600">
+            Switch off two-factor for {investor.name}?
+          </span>
+          <button
+            type="button"
+            onClick={reset}
+            disabled={saving}
+            className="rounded-md bg-red-700 px-2.5 py-1 text-xs font-medium text-white disabled:opacity-50"
+          >
+            {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Reset"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setConfirming(false)}
+            className="rounded-md px-2 py-1 text-xs text-slate-500 hover:text-slate-900"
+          >
+            Cancel
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => {
+            setError("");
+            setConfirming(true);
+          }}
+          className="mt-3 inline-flex items-center rounded-[12px] border border-[#eadfd2] bg-white px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-[#fff1ef]"
+        >
+          Reset two-factor
+        </button>
+      )}
+      {error ? <p className="mt-2 text-xs text-rose-600">{error}</p> : null}
+    </div>
+  );
+}
+
 function InvestorDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -439,6 +510,11 @@ function InvestorDetailPage() {
           <DetailCard icon={ShieldCheck} title="Status Management">
             <div className="space-y-4">
               <ManagingMemberControl
+                investor={investor}
+                onSaved={(updated) => setInvestor(updated)}
+              />
+
+              <TwoFactorResetControl
                 investor={investor}
                 onSaved={(updated) => setInvestor(updated)}
               />

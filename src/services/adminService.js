@@ -38,6 +38,11 @@ export const updateManagingMember = async (id, isManagingMember) => {
   return data.data;
 };
 
+export const resetInvestorTwoFactor = async (id) => {
+  const { data } = await api.delete(`/investors/${id}/two-factor`);
+  return data.data;
+};
+
 export const updateInvestorStatuses = async (id, updates) => {
   const { data } = await api.patch(`/investors/${id}/statuses`, updates);
   return data.data;

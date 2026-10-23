@@ -1,9 +1,43 @@
 import investorApi, { setInvestorAuthToken } from "./investorApi";
+import { deviceTokenStore, makeTwoFactorApi } from "./twoFactorService";
 
-export const login = async ({ email, password }) => {
-  const { data } = await investorApi.post("/login", { email, password });
+const device = deviceTokenStore("access_investor_device");
+
+export const investorTwoFactor = makeTwoFactorApi(investorApi);
+
+const finishSignIn = (data) => {
   setInvestorAuthToken(data.token);
+  device.write(data.deviceToken);
   return data.investor;
+};
+
+/**
+ * Either signs in and returns the investor, or — when they have two-factor on
+ * and this browser is not remembered — returns `{ twoFactorRequired,
+ * challenge }` for the code step.
+ */
+export const login = async ({ email, password }) => {
+  const { data } = await investorApi.post("/login", {
+    email,
+    password,
+    deviceToken: device.read(),
+  });
+
+  if (data.twoFactorRequired) {
+    return { twoFactorRequired: true, challenge: data.challenge };
+  }
+
+  return finishSignIn(data);
+};
+
+export const completeTwoFactorLogin = async ({ challenge, code, recoveryCode, remember }) => {
+  const { data } = await investorApi.post("/login/two-factor", {
+    challenge,
+    code,
+    recoveryCode,
+    remember,
+  });
+  return finishSignIn(data);
 };
 
 export const logout = async () => {

@@ -25,9 +25,21 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Two-factor is required for admins. Until it is set up the API answers
+// every admin endpoint but setup with this code, so send them there.
 api.interceptors.response.use(
   (response) => response,
-  (error) => Promise.reject(error)
+  (error) => {
+    if (
+      error?.response?.status === 403 &&
+      error.response.data?.code === "two_factor_setup_required" &&
+      typeof window !== "undefined" &&
+      window.location.pathname !== "/admin/two-factor"
+    ) {
+      window.location.assign("/admin/two-factor");
+    }
+    return Promise.reject(error);
+  }
 );
 
 export const setAuthToken = (token) => {

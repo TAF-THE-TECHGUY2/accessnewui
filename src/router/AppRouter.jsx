@@ -6,6 +6,7 @@ const FaqPage = lazy(() => import("../pages/FaqPage"));
 const AdminLayout = lazy(() => import("../admin/layout/AdminLayout"));
 const RequireAuth = lazy(() => import("../admin/components/RequireAuth"));
 const LoginPage = lazy(() => import("../admin/pages/LoginPage"));
+const AdminTwoFactorPage = lazy(() => import("../admin/pages/TwoFactorPage"));
 const DashboardPage = lazy(() => import("../admin/pages/DashboardPage"));
 const InvestorsPage = lazy(() => import("../admin/pages/InvestorsPage"));
 const InvestorDetailPage = lazy(() => import("../admin/pages/InvestorDetailPage"));
@@ -60,6 +61,8 @@ function AppRouter() {
           <Route path="/oauth/investready/callback" element={<InvestReadyCallbackPage />} />
         </Route>
         <Route element={<RequireAuth />}>
+          {/* Outside the layout: it must work before two-factor is set up. */}
+          <Route path="/admin/two-factor" element={<AdminTwoFactorPage />} />
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<Navigate to="/admin/dashboard" replace />} />
             <Route path="dashboard" element={<DashboardPage />} />

@@ -16,8 +16,10 @@ import {
   changePortalPassword,
   fetchPortalDocuments,
   fetchPortalProfile,
+  investorTwoFactor,
   updatePortalProfile,
 } from "../../../services/investorPortalService";
+import TwoFactorManager from "../../../components/security/TwoFactorManager";
 import { accreditationDisplayStatus } from "../../../utils/formatters";
 
 // Ordered to read across the two columns as pairs: name beside phone, the two
@@ -184,7 +186,7 @@ function SecurityPanel() {
             Security &amp; preferences
           </span>
           <span className="mt-0.5 block text-sm text-[#6b7280]">
-            Manage your password and communication preferences.
+            Manage your password, two-factor sign-in and communication preferences.
           </span>
         </span>
         <ChevronRight
@@ -263,6 +265,17 @@ function SecurityPanel() {
               </button>
             </div>
           </form>
+
+          <div className="mt-8 border-t border-black/5 pt-6">
+            <h3 className="text-[15px] font-medium text-[#111111]">
+              Two-factor sign-in
+            </h3>
+            <p className="mb-4 mt-1 text-[13px] text-[#6b7280]">
+              Ask for a code from an authenticator app on your phone as well as
+              your password.
+            </p>
+            <TwoFactorManager api={investorTwoFactor} />
+          </div>
         </div>
       ) : null}
     </section>

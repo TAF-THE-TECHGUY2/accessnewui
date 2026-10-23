@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { Lock, Mail } from "lucide-react";
-import { login } from "../../services/authService";
+import { completeTwoFactorLogin, login } from "../../services/authService";
+import TwoFactorChallenge from "../../components/security/TwoFactorChallenge";
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -12,10 +13,36 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  // Set once the password is right and the account needs a code.
+  const [challenge, setChallenge] = useState(null);
 
   if (typeof window !== "undefined" && window.localStorage.getItem("access_admin_token")) {
     return <Navigate to={from} replace />;
   }
+
+  // Two-factor is required for admins: one who has not set it up yet is sent
+  // to do that before anything else.
+  const afterSignIn = (result) => {
+    navigate(result.twoFactorSetupRequired ? "/admin/two-factor" : from, {
+      replace: true,
+    });
+  };
+
+  const handleCode = async (codeInput) => {
+    setSubmitting(true);
+    setError(null);
+    try {
+      afterSignIn(await completeTwoFactorLogin({ challenge, ...codeInput }));
+    } catch (err) {
+      if (err?.response?.data?.code === "challenge_expired") {
+        setChallenge(null);
+        setPassword("");
+      }
+      setError(err?.response?.data?.message || "That code did not work.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -23,8 +50,12 @@ function LoginPage() {
     setError(null);
 
     try {
-      await login({ email, password });
-      navigate(from, { replace: true });
+      const result = await login({ email, password });
+      if (result.twoFactorRequired) {
+        setChallenge(result.challenge);
+        return;
+      }
+      afterSignIn(result);
     } catch (err) {
       const message =
         err?.response?.data?.errors?.email?.[0] ||
@@ -47,6 +78,21 @@ function LoginPage() {
           </p>
         </div>
 
+        {challenge ? (
+          <div className="mt-8">
+            <TwoFactorChallenge
+              onSubmit={handleCode}
+              onCancel={() => {
+                setChallenge(null);
+                setPassword("");
+                setError(null);
+              }}
+              submitting={submitting}
+              error={error}
+              buttonClassName="bg-[#123438] hover:bg-[#0d2528]"
+            />
+          </div>
+        ) : (
         <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
           <label className="block">
             <span className="text-xs font-medium uppercase tracking-wide text-gray-500">
@@ -98,6 +144,7 @@ function LoginPage() {
             {submitting ? "Signing in..." : "Sign in"}
           </button>
         </form>
+        )}
       </div>
     </div>
   );

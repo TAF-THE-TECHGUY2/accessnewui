@@ -1,5 +1,5 @@
-import { Bell, LogOut, Menu, Search } from "lucide-react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Bell, LogOut, Menu, Search, ShieldCheck } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { logout } from "../../services/authService";
 
 const routeCopy = {
@@ -115,6 +115,14 @@ function TopNav({ onMenuToggle }) {
               <p className="font-semibold text-ink">Admin User</p>
               <p className="text-xs text-gray-500">Access Properties</p>
             </div>
+            <Link
+              to="/admin/two-factor"
+              className="ml-1 rounded-full p-2 text-gray-500 transition hover:bg-gray-100 hover:text-teal-800"
+              aria-label="Sign-in security"
+              title="Sign-in security"
+            >
+              <ShieldCheck className="h-4 w-4" />
+            </Link>
             <button
               type="button"
               onClick={handleLogout}
