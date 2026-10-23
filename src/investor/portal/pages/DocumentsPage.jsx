@@ -43,7 +43,13 @@ export const CATEGORY_META = {
   },
 };
 
-const CATEGORIES = ["legal", "operational", "tax", "financial"];
+// No "legal" here. The legal category holds the blank offering and
+// subscription documents, which investors review during onboarding (the
+// dashboard's offering-documents step). This page is only reached once
+// onboarding is complete, and by then what they need is the copy they signed,
+// shown above the categories instead of the templates.
+export const PORTAL_CATEGORIES = ["operational", "tax", "financial"];
+const CATEGORIES = PORTAL_CATEGORIES;
 
 const formatBytes = (bytes) => {
   if (!bytes) return null;
