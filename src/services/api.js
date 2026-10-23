@@ -38,6 +38,20 @@ api.interceptors.response.use(
     ) {
       window.location.assign("/admin/two-factor");
     }
+
+    // An expired or revoked session. Sign-in requests answer 401 for their
+    // own reasons and are left to the page.
+    const url = error?.config?.url || "";
+    if (
+      error?.response?.status === 401 &&
+      !/\/login(\/|$)/.test(url) &&
+      typeof window !== "undefined" &&
+      window.location.pathname !== "/admin/login"
+    ) {
+      setAuthToken(null);
+      window.location.assign("/admin/login");
+    }
+
     return Promise.reject(error);
   }
 );

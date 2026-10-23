@@ -29,9 +29,23 @@ investorApi.interceptors.request.use((config) => {
   return config;
 });
 
+// An expired or revoked session: back to sign-in rather than a page of
+// failed requests. Sign-in requests answer for their own reasons.
 investorApi.interceptors.response.use(
   (response) => response,
-  (error) => Promise.reject(error)
+  (error) => {
+    const url = error?.config?.url || "";
+    if (
+      error?.response?.status === 401 &&
+      !/\/login(\/|$)/.test(url) &&
+      typeof window !== "undefined" &&
+      window.location.pathname !== "/login"
+    ) {
+      setInvestorAuthToken(null);
+      window.location.assign("/login");
+    }
+    return Promise.reject(error);
+  }
 );
 
 export const setInvestorAuthToken = (token) => {
