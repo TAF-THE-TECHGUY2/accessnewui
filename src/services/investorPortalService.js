@@ -267,9 +267,10 @@ export const openPortalDocument = async (document) => {
     `/portal/documents/${document.id}/download`,
     { responseType: "blob" }
   );
-  const blob = new Blob([response.data], {
-    type: response.data.type || "application/pdf",
-  });
+  // Always a PDF, whatever the response says: the blob opens on this origin,
+  // and an HTML or SVG file opened here could run script. Uploads are PDF-only
+  // today; this keeps it so if that rule ever loosens.
+  const blob = new Blob([response.data], { type: "application/pdf" });
   const blobUrl = window.URL.createObjectURL(blob);
   const opened = window.open(blobUrl, "_blank", "noopener,noreferrer");
 

@@ -22,6 +22,7 @@ import {
   fetchCommunications,
 } from "../../../services/investorPortalService";
 import SecureMessages from "../components/SecureMessages";
+import { sanitizeHtml } from "../../../utils/safeHtml";
 
 const SUPPORT_EMAIL = "investors@ap.boston";
 
@@ -173,9 +174,11 @@ function CommunicationDetail({ id, onBack }) {
       ) : null}
       <div
         className="rich-text mt-6 text-[#1f2937]"
-        // Server-side admin authors trusted content; sanitize on input rather than output.
+        // Written by an admin, but nothing cleans it on the way in, and one
+        // compromised admin account should not mean script on every investor's
+        // portal.
         // eslint-disable-next-line react/no-danger
-        dangerouslySetInnerHTML={{ __html: item.body }}
+        dangerouslySetInnerHTML={{ __html: sanitizeHtml(item.body) }}
       />
     </article>
   );

@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 
 import { faqConfig, faqItems } from "./faqFallback.js";
+import { sanitizeHtml } from "../utils/safeHtml";
 
 const API_BASE_URL = "https://api.ap.boston";
 
@@ -216,7 +217,8 @@ export default function FaqPage({ embedded = false }) {
                   </h3>
                   <div
                     className="whitespace-pre-line text-[14px] leading-relaxed text-gray-700 md:text-[15px]"
-                    dangerouslySetInnerHTML={{ __html: selected.answerHtml }}
+                    // From the marketing site's CMS, not from this app.
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(selected.answerHtml) }}
                   />
                 </div>
               ) : null}
