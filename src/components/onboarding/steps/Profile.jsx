@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   ArrowRight,
   ChevronDown,
+  DollarSign,
   Eye,
   EyeOff,
   Globe,
@@ -19,6 +20,7 @@ import {
 import OnboardingShell from "../OnboardingShell";
 import {
   fetchPublicSettings,
+  parseAmount,
   registerInvestor,
 } from "../../../services/investorService";
 
@@ -35,14 +37,22 @@ const DEFAULT_LEGAL_LINKS = {
   privacyPolicyUrl: "https://www.ap.boston/privacy-policy",
 };
 
-// The single accredited pathway offered by this flow. Investment amount and
-// accreditation are confirmed later inside the investor portal, so the
-// registration call records the fund minimum as the starting commitment.
+// The single accredited pathway offered by this flow. Accreditation is
+// verified later inside the investor portal.
 const ACCREDITED_PATHWAY = {
   experience: "experienced",
-  investmentAmount: 10000,
   accreditationStatus: "accredited",
 };
+
+// The direct offering's minimum. The figure entered here becomes the
+// investor's commitment: it is the amount on their subscription agreement and
+// the default for their first funding payment, so it was wrong for everyone
+// while this form sent the minimum on their behalf.
+const MINIMUM_INVESTMENT = 10000;
+const MAXIMUM_INVESTMENT = 100_000_000;
+
+const formatUsd = (n) =>
+  n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 
 const REQUIRED_FIELDS = [
   "firstName",
@@ -53,6 +63,7 @@ const REQUIRED_FIELDS = [
   "stateProvince",
   "zipPostalCode",
   "country",
+  "investmentAmount",
   "password",
   "passwordConfirmation",
 ];
@@ -66,6 +77,16 @@ function validate(profile) {
   });
   if (profile.email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(profile.email)) {
     errors.email = "Enter a valid email";
+  }
+  if (profile.investmentAmount && String(profile.investmentAmount).trim()) {
+    const amount = parseAmount(profile.investmentAmount);
+    if (!amount) {
+      errors.investmentAmount = "Enter an amount in US dollars";
+    } else if (amount < MINIMUM_INVESTMENT) {
+      errors.investmentAmount = `The minimum is ${formatUsd(MINIMUM_INVESTMENT)}`;
+    } else if (amount > MAXIMUM_INVESTMENT) {
+      errors.investmentAmount = "Please contact us for an investment of this size";
+    }
   }
   if (profile.password && profile.password.length < 8) {
     errors.password = "8+ characters required";
@@ -230,6 +251,7 @@ function Profile({ initial, onBack, onSuccess }) {
       const data = await registerInvestor({
         profile,
         ...ACCREDITED_PATHWAY,
+        investmentAmount: parseAmount(profile.investmentAmount),
         password: profile.password,
         passwordConfirmation: profile.passwordConfirmation,
       });
@@ -415,6 +437,26 @@ function Profile({ initial, onBack, onSuccess }) {
                   options={COUNTRIES}
                   error={errors.country}
                 />
+              </div>
+              <div className="sm:col-span-2">
+                <FieldLabel>Investment amount (USD)</FieldLabel>
+                <Input
+                  icon={DollarSign}
+                  name="investmentAmount"
+                  value={profile.investmentAmount}
+                  onChange={handleChange}
+                  error={errors.investmentAmount}
+                  inputMode="decimal"
+                  autoComplete="off"
+                  placeholder={`${formatUsd(MINIMUM_INVESTMENT)} minimum`}
+                />
+                {!errors.investmentAmount ? (
+                  <p className="mt-1 text-[10px] text-[#6b7280]">
+                    {parseAmount(profile.investmentAmount || "") >= MINIMUM_INVESTMENT
+                      ? `${formatUsd(parseAmount(profile.investmentAmount))}`
+                      : `How much you intend to invest. The minimum is ${formatUsd(MINIMUM_INVESTMENT)}.`}
+                  </p>
+                ) : null}
               </div>
               <div>
                 <FieldLabel>Password</FieldLabel>
