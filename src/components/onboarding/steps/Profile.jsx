@@ -98,6 +98,9 @@ function validate(profile) {
   ) {
     errors.passwordConfirmation = "Doesn't match";
   }
+  if (profile.usPerson !== "yes" && profile.usPerson !== "no") {
+    errors.usPerson = "Please choose one";
+  }
   if (!profile.acceptTerms) errors.acceptTerms = "Required";
   if (!profile.acceptPrivacy) errors.acceptPrivacy = "Required";
   return errors;
@@ -252,6 +255,7 @@ function Profile({ initial, onBack, onSuccess }) {
         profile,
         ...ACCREDITED_PATHWAY,
         investmentAmount: parseAmount(profile.investmentAmount),
+        usPerson: profile.usPerson === "yes",
         password: profile.password,
         passwordConfirmation: profile.passwordConfirmation,
       });
@@ -458,6 +462,48 @@ function Profile({ initial, onBack, onSuccess }) {
                   </p>
                 ) : null}
               </div>
+              {/* Decides the tax form in the signing package: W-9 for a US
+                  person, W-8BEN otherwise. Asked, not inferred from the
+                  address: a US citizen abroad still signs a W-9. */}
+              <fieldset className="sm:col-span-2">
+                <FieldLabel>Are you a US citizen or US resident for tax purposes?</FieldLabel>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { value: "yes", label: "Yes" },
+                    { value: "no", label: "No" },
+                  ].map((option) => (
+                    <label
+                      key={option.value}
+                      className={`flex h-11 cursor-pointer items-center gap-2 rounded-[10px] border bg-white px-3 text-[13px] text-[#111111] transition ${
+                        profile.usPerson === option.value
+                          ? "border-[#111111] ring-2 ring-black/5"
+                          : errors.usPerson
+                            ? "border-red-300"
+                            : "border-black/10"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="usPerson"
+                        value={option.value}
+                        checked={profile.usPerson === option.value}
+                        onChange={handleChange}
+                        className="h-3.5 w-3.5 accent-[#111111]"
+                      />
+                      {option.label}
+                    </label>
+                  ))}
+                </div>
+                {errors.usPerson ? (
+                  <p className="mt-1 text-[10px] text-red-600">{errors.usPerson}</p>
+                ) : (
+                  <p className="mt-1 text-[10px] text-[#6b7280]">
+                    Yes if you are a US citizen, a green card holder, or otherwise
+                    resident in the US for tax purposes — wherever you live now.
+                    This decides whether you sign a W-9 or a W-8BEN.
+                  </p>
+                )}
+              </fieldset>
               <div>
                 <FieldLabel>Password</FieldLabel>
                 <Input

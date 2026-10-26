@@ -49,6 +49,7 @@ export const registerInvestor = async ({
   experience,
   investmentAmount,
   accreditationStatus,
+  usPerson,
   password,
   passwordConfirmation,
 }) => {
@@ -68,6 +69,7 @@ export const registerInvestor = async ({
     experience,
     investmentAmount: parseAmount(investmentAmount),
     accreditationStatus,
+    usPerson,
     receiveUpdates: Boolean(profile.receiveUpdates),
   };
 

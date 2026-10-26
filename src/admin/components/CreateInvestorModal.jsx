@@ -22,6 +22,9 @@ const EMPTY = {
   investorType: "Individual",
   entityName: "",
   accreditationStatus: "accredited",
+  // "yes" / "no". Blank until chosen: it decides the W-9 or W-8BEN in their
+  // signing package, and the country cannot (a US citizen abroad signs a W-9).
+  usPerson: "",
   commitment: 10000,
   fundCode: "",
   // Blank means "create the profile only". Supplying a date records the
@@ -253,6 +256,7 @@ function CreateInvestorModal({ open, onClose, onCreated }) {
       const payload = {
         ...form,
         commitment: Number(form.commitment),
+        usPerson: form.usPerson === "yes",
         entityName: isEntity ? form.entityName : null,
         // Omit rather than send empty strings — the backend treats a missing
         // date as "profile only, no position recorded".
@@ -369,6 +373,24 @@ function CreateInvestorModal({ open, onClose, onCreated }) {
                 >
                   <option value="accredited">Accredited</option>
                   <option value="non_accredited">Non-accredited</option>
+                </select>
+              </label>
+              <label className="block">
+                <span className="text-[11px] uppercase tracking-[0.14em] text-gray-500">
+                  US citizen or US tax resident? <span className="text-red-600">*</span>
+                </span>
+                <select
+                  name="usPerson"
+                  value={form.usPerson}
+                  onChange={handleChange}
+                  required
+                  className="mt-1.5 h-10 w-full rounded-[10px] border border-black/10 px-3 text-sm"
+                >
+                  <option value="" disabled>
+                    Choose…
+                  </option>
+                  <option value="yes">Yes — signs a W-9</option>
+                  <option value="no">No — signs a W-8BEN</option>
                 </select>
               </label>
             </div>

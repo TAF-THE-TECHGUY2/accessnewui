@@ -34,6 +34,7 @@ import {
   updateInvestorStatuses,
   resetInvestorTwoFactor,
   updateManagingMember,
+  updateTaxStatus,
 } from "../../services/adminService";
 import DestructiveDeleteModal from "../components/DestructiveDeleteModal";
 import {
@@ -336,6 +337,87 @@ function TwoFactorResetControl({ investor, onSaved }) {
   );
 }
 
+/**
+ * US person or not, for tax purposes. Decides whether their signing package
+ * carries a W-9 or a W-8BEN. Investors who signed up before the question was
+ * asked were placed by their country, so this is where that gets corrected.
+ */
+function TaxStatusControl({ investor, onSaved }) {
+  const [confirming, setConfirming] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [warning, setWarning] = useState("");
+
+  const isUs = Boolean(investor.isUsTaxPerson);
+
+  const apply = async () => {
+    setSaving(true);
+    setError("");
+    setWarning("");
+    try {
+      const result = await updateTaxStatus(investor.id, !isUs);
+      onSaved(result.investor);
+      setWarning(result.warning || "");
+      setConfirming(false);
+    } catch (err) {
+      setError(err?.response?.data?.message || "Could not update the tax status.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="rounded-[16px] border border-[#eadfd2] bg-[#fcfaf7] p-4">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-ink">Tax status</p>
+          <p className="mt-0.5 text-xs text-slate-500">
+            {isUs ? "US person" : "Not a US person"} · signs a{" "}
+            <strong>{investor.taxForm || (isUs ? "W-9" : "W-8BEN")}</strong>
+          </p>
+        </div>
+      </div>
+      {confirming ? (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <span className="text-xs text-slate-600">
+            Change to {isUs ? "not a US person (W-8BEN)" : "US person (W-9)"}?
+          </span>
+          <button
+            type="button"
+            onClick={apply}
+            disabled={saving}
+            className="rounded-md bg-slate-900 px-2.5 py-1 text-xs font-medium text-white disabled:opacity-50"
+          >
+            {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Confirm"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setConfirming(false)}
+            className="rounded-md px-2 py-1 text-xs text-slate-500 hover:text-slate-900"
+          >
+            Cancel
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => {
+            setError("");
+            setConfirming(true);
+          }}
+          className="mt-3 inline-flex items-center rounded-[12px] border border-[#eadfd2] bg-white px-3 py-1.5 text-xs font-semibold text-teal-800 transition hover:bg-[#edf6f4]"
+        >
+          {isUs ? "Mark as not a US person" : "Mark as US person"}
+        </button>
+      )}
+      {warning ? (
+        <p className="mt-2 rounded-md bg-amber-50 px-2 py-1.5 text-xs text-amber-800">{warning}</p>
+      ) : null}
+      {error ? <p className="mt-2 text-xs text-rose-600">{error}</p> : null}
+    </div>
+  );
+}
+
 function InvestorDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -510,6 +592,11 @@ function InvestorDetailPage() {
           <DetailCard icon={ShieldCheck} title="Status Management">
             <div className="space-y-4">
               <ManagingMemberControl
+                investor={investor}
+                onSaved={(updated) => setInvestor(updated)}
+              />
+
+              <TaxStatusControl
                 investor={investor}
                 onSaved={(updated) => setInvestor(updated)}
               />

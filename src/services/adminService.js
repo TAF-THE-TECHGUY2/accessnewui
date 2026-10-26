@@ -43,6 +43,12 @@ export const resetInvestorTwoFactor = async (id) => {
   return data.data;
 };
 
+/** Returns the updated investor, and a warning when an agreement already sent uses the other tax form. */
+export const updateTaxStatus = async (id, usPerson) => {
+  const { data } = await api.patch(`/investors/${id}/tax-status`, { usPerson });
+  return { investor: data.data, warning: data.warning || null };
+};
+
 export const updateInvestorStatuses = async (id, updates) => {
   const { data } = await api.patch(`/investors/${id}/statuses`, updates);
   return data.data;
