@@ -26,6 +26,29 @@ function CodeInput({ value, onChange, autoFocus = false }) {
   );
 }
 
+/** The QR code and the same key as text, for an authenticator app to add. */
+function ScanCode({ provisioning }) {
+  return (
+    <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+      {/* An <img>, not inline markup: the SVG is ours, but an image
+          cannot run anything whatever it contains. */}
+      <img
+        src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(provisioning.qrSvg)}`}
+        alt="QR code for your authenticator app"
+        width={180}
+        height={180}
+        className="rounded-[12px] border border-black/10 bg-white p-2"
+      />
+      <div className="min-w-0 text-[13px] text-[#6b7280]">
+        <p>Can't scan it? Enter this key instead:</p>
+        <p className="mt-1 break-all font-mono text-sm text-[#111111]">
+          {provisioning.secret.match(/.{1,4}/g).join(" ")}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 /** Shown once, right after they are generated. */
 function RecoveryCodes({ codes, onDone }) {
   const [copied, setCopied] = useState(false);
@@ -95,7 +118,9 @@ function TwoFactorManager({ api, canDisable = true, onEnabled }) {
   const [codes, setCodes] = useState(null);
   const [code, setCode] = useState("");
   const [password, setPassword] = useState("");
-  const [mode, setMode] = useState(null); // "regenerate" | "disable"
+  const [mode, setMode] = useState(null); // "regenerate" | "disable" | "add-device"
+  // The existing key, shown again for another phone to scan.
+  const [extraDevice, setExtraDevice] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -135,6 +160,15 @@ function TwoFactorManager({ api, canDisable = true, onEnabled }) {
     run(async () => {
       const data = await api.regenerateRecoveryCodes(code);
       setCodes(data.recoveryCodes);
+      setMode(null);
+      setCode("");
+    });
+  };
+
+  const addDevice = (e) => {
+    e.preventDefault();
+    run(async () => {
+      setExtraDevice(await api.addDevice(code));
       setMode(null);
       setCode("");
     });
@@ -195,23 +229,7 @@ function TwoFactorManager({ api, canDisable = true, onEnabled }) {
           <li>Add an account and scan this QR code.</li>
           <li>Enter the 6-digit code the app shows.</li>
         </ol>
-        <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
-          {/* An <img>, not inline markup: the SVG is ours, but an image
-              cannot run anything whatever it contains. */}
-          <img
-            src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(setup.qrSvg)}`}
-            alt="QR code for your authenticator app"
-            width={180}
-            height={180}
-            className="rounded-[12px] border border-black/10 bg-white p-2"
-          />
-          <div className="min-w-0 text-[13px] text-[#6b7280]">
-            <p>Can't scan it? Enter this key instead:</p>
-            <p className="mt-1 break-all font-mono text-sm text-[#111111]">
-              {setup.secret.match(/.{1,4}/g).join(" ")}
-            </p>
-          </div>
-        </div>
+        <ScanCode provisioning={setup} />
         {errorBox}
         <div className="flex flex-wrap items-center gap-2">
           <CodeInput value={code} onChange={setCode} autoFocus />
@@ -269,7 +287,33 @@ function TwoFactorManager({ api, canDisable = true, onEnabled }) {
       {notice ? <p className="text-[13px] text-[#4d8a63]">{notice}</p> : null}
       {errorBox}
 
-      {mode === "regenerate" ? (
+      {extraDevice ? (
+        <div className="space-y-4 rounded-[12px] border border-black/10 p-4">
+          <p className="text-[13px] leading-6 text-[#374151]">
+            Scan this with the other phone's authenticator app. It will show the
+            same codes as your first phone, and both keep working.
+          </p>
+          <ScanCode provisioning={extraDevice} />
+          <button type="button" onClick={() => setExtraDevice(null)} className={primaryClass}>
+            Done
+          </button>
+        </div>
+      ) : mode === "add-device" ? (
+        <form onSubmit={addDevice} className="space-y-2">
+          <p className="text-[13px] text-[#6b7280]">
+            Enter a code from a phone that is already set up.
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <CodeInput value={code} onChange={setCode} autoFocus />
+            <button type="submit" disabled={busy} className={primaryClass}>
+              Show QR code
+            </button>
+            <button type="button" onClick={() => setMode(null)} className={secondaryClass}>
+              Cancel
+            </button>
+          </div>
+        </form>
+      ) : mode === "regenerate" ? (
         <form onSubmit={regenerate} className="flex flex-wrap items-center gap-2">
           <CodeInput value={code} onChange={setCode} autoFocus />
           <button type="submit" disabled={busy} className={primaryClass}>
@@ -302,6 +346,9 @@ function TwoFactorManager({ api, canDisable = true, onEnabled }) {
         </form>
       ) : (
         <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={() => setMode("add-device")} className={secondaryClass}>
+            Add another device
+          </button>
           <button type="button" onClick={() => setMode("regenerate")} className={secondaryClass}>
             New recovery codes
           </button>

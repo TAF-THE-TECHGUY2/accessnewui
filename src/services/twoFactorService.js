@@ -27,6 +27,7 @@ export const makeTwoFactorApi = (client) => ({
   status: async () => (await client.get("/two-factor")).data,
   setup: async () => (await client.post("/two-factor/setup")).data,
   confirm: async (code) => (await client.post("/two-factor/confirm", { code })).data,
+  addDevice: async (code) => (await client.post("/two-factor/add-device", { code })).data,
   regenerateRecoveryCodes: async (code) =>
     (await client.post("/two-factor/recovery-codes", { code })).data,
   forgetDevices: async () => (await client.delete("/two-factor/devices")).data,
