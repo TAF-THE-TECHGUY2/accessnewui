@@ -110,7 +110,7 @@ export function MetricStrip({ metrics, size = "md", cols = 4, className = "" }) 
   );
 }
 
-/** Shown under every Total Return figure, wherever one appears. */
+/** Shown once per page that reports a Total Return, under its first figure. */
 export const TOTAL_RETURN_BASIS =
   "Based on NAV; net of fund-level fees and expenses.";
 
@@ -118,7 +118,7 @@ export const TOTAL_RETURN_BASIS =
  * Builds the four metrics both fund screens show, from one breakdown payload,
  * so the overview and the detail page cannot drift apart.
  */
-export function portfolioMetrics(totals, { currentValueNote } = {}) {
+export function portfolioMetrics(totals, { currentValueNote, showReturnBasis = true } = {}) {
   return [
     {
       label: "Amount Invested",
@@ -140,7 +140,7 @@ export function portfolioMetrics(totals, { currentValueNote } = {}) {
       // The unit price this is measured against is published net of fund
       // expenses and fees, so the return is net too. Without saying so the
       // figure reads as a gross number with a charge still to come.
-      footnote: TOTAL_RETURN_BASIS,
+      footnote: showReturnBasis ? TOTAL_RETURN_BASIS : undefined,
     },
     {
       label: "Units Held",

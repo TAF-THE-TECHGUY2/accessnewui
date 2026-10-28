@@ -90,7 +90,9 @@ function FundCard({ holding, breakdown, unvaluedMessage }) {
 
       {breakdown ? (
         <div className="mt-6 rounded-[16px] border border-black/10">
-          <MetricStrip metrics={portfolioMetrics(breakdown.totals)} />
+          {/* The snapshot above already says what the returns are based on;
+              repeating it on every fund card said it once per fund. */}
+          <MetricStrip metrics={portfolioMetrics(breakdown.totals, { showReturnBasis: false })} />
         </div>
       ) : (
         <div className="mt-6">
