@@ -46,13 +46,18 @@ function PortalLayout({ investor, setInvestor }) {
             className="flex shrink-0 items-center gap-3"
             aria-label="Access Properties investor portal"
           >
-            {/* The brand lockup: AP mark and wordmark as one asset, rather
-                than the mark beside hand-set type. Its background is white and
-                the bar is #fff, so the two meet without a visible edge — which
-                is also why it cannot be reused on a dark surface. No alt: the
-                link above it is already labelled, so a second reading of the
-                name would only repeat it. */}
-            <img src="/assets/Logo.png" alt="" className="h-7 w-auto md:h-8" />
+            {/* The AP mark alone, as the fund asked: white on its own black
+                square, so it sits on the white bar as a tile rather than being
+                inverted into a thin outline. A 192px copy of AP.png, which is
+                1254px and half a megabyte. No alt: the link is already
+                labelled, so a second reading of the name would only repeat it. */}
+            <img
+              src="/assets/AP-mark.png"
+              alt=""
+              width={40}
+              height={40}
+              className="h-9 w-9 rounded-[8px] md:h-10 md:w-10"
+            />
           </NavLink>
 
           {/* Below md the links would wrap into a block that lands on top of
