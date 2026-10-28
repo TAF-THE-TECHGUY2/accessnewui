@@ -19,6 +19,7 @@ const FundsPage = lazy(() => import("../admin/pages/FundsPage"));
 const FundDetailPage = lazy(() => import("../admin/pages/FundDetailPage"));
 const AdminCommunicationsPage = lazy(() => import("../admin/pages/CommunicationsPage"));
 const InvestorLoginPage = lazy(() => import("../investor/pages/LoginPage"));
+const InvestorTwoFactorSetupPage = lazy(() => import("../investor/pages/TwoFactorSetupPage"));
 const InvestorForgotPasswordPage = lazy(() => import("../investor/pages/ForgotPasswordPage"));
 const InvestorResetPasswordPage = lazy(() => import("../investor/pages/ResetPasswordPage"));
 const InvestorDashboardPage = lazy(() => import("../investor/pages/DashboardPage"));
@@ -48,6 +49,8 @@ function AppRouter() {
         <Route path="/forgot-password" element={<InvestorForgotPasswordPage />} />
         <Route path="/reset-password" element={<InvestorResetPasswordPage />} />
         <Route element={<RequireInvestorAuth />}>
+          {/* Outside the portal: it must work before two-factor is decided. */}
+          <Route path="/security/two-factor" element={<InvestorTwoFactorSetupPage />} />
           <Route path="/dashboard" element={<InvestorDashboardPage />}>
             <Route index element={<PortalInvestmentPage />} />
             <Route path="profile" element={<PortalProfilePage />} />

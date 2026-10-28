@@ -8,7 +8,7 @@ export const investorTwoFactor = makeTwoFactorApi(investorApi);
 const finishSignIn = (data) => {
   setInvestorAuthToken(data.token);
   device.write(data.deviceToken);
-  return data.investor;
+  return { ...data.investor, twoFactorSetupRequired: Boolean(data.twoFactorSetupRequired) };
 };
 
 /**

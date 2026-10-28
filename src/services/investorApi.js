@@ -34,6 +34,17 @@ investorApi.interceptors.request.use((config) => {
 investorApi.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Two-factor is required until set up or declined; the API answers this
+    // code until then, so send them to decide.
+    if (
+      error?.response?.status === 403 &&
+      error.response.data?.code === "two_factor_setup_required" &&
+      typeof window !== "undefined" &&
+      window.location.pathname !== "/security/two-factor"
+    ) {
+      window.location.assign("/security/two-factor");
+    }
+
     const url = error?.config?.url || "";
     if (
       error?.response?.status === 401 &&

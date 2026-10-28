@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Check, Copy, Download, Loader2, ShieldCheck, ShieldOff } from "lucide-react";
 
 import { twoFactorError } from "../../services/twoFactorService";
+import DisableTwoFactorWarning from "./DisableTwoFactorWarning";
 
 const inputClass =
   "h-11 w-full rounded-[10px] border border-black/10 bg-[#fafafa] px-3 text-sm text-[#111111] focus:border-black/35 focus:bg-white focus:outline-none focus:ring-2 focus:ring-black/10";
@@ -121,6 +122,9 @@ function TwoFactorManager({ api, canDisable = true, onEnabled }) {
   const [mode, setMode] = useState(null); // "regenerate" | "disable" | "add-device"
   // The existing key, shown again for another phone to scan.
   const [extraDevice, setExtraDevice] = useState(null);
+  // The risk warning comes first; only once it is accepted is the password
+  // and code asked for.
+  const [warning, setWarning] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -265,6 +269,16 @@ function TwoFactorManager({ api, canDisable = true, onEnabled }) {
 
   return (
     <div className="space-y-4">
+      {warning ? (
+        <DisableTwoFactorWarning
+          confirmLabel="Continue"
+          onCancel={() => setWarning(false)}
+          onConfirm={() => {
+            setWarning(false);
+            setMode("disable");
+          }}
+        />
+      ) : null}
       <div className="flex items-start gap-3">
         <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#4d8a63]" />
         <div className="text-[13px] leading-6 text-[#374151]">
@@ -325,6 +339,9 @@ function TwoFactorManager({ api, canDisable = true, onEnabled }) {
         </form>
       ) : mode === "disable" ? (
         <form onSubmit={disable} className="space-y-2">
+          <p className="text-[13px] text-[#6b7280]">
+            Confirm with your password and a code from your authenticator app.
+          </p>
           <input
             type="password"
             required
@@ -358,7 +375,7 @@ function TwoFactorManager({ api, canDisable = true, onEnabled }) {
             </button>
           ) : null}
           {canDisable ? (
-            <button type="button" onClick={() => setMode("disable")} className={secondaryClass}>
+            <button type="button" onClick={() => setWarning(true)} className={secondaryClass}>
               Turn off
             </button>
           ) : null}

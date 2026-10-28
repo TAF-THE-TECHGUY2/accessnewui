@@ -49,7 +49,7 @@ function LoginPage() {
         setChallenge(result.challenge);
         return;
       }
-      navigate(from, { replace: true });
+      navigate(result?.twoFactorSetupRequired ? "/security/two-factor" : from, { replace: true });
     } catch (err) {
       const message =
         err?.response?.data?.message ||

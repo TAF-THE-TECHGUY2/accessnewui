@@ -31,8 +31,10 @@ export const makeTwoFactorApi = (client) => ({
   regenerateRecoveryCodes: async (code) =>
     (await client.post("/two-factor/recovery-codes", { code })).data,
   forgetDevices: async () => (await client.delete("/two-factor/devices")).data,
+  // Both need the risk warning accepted; the server records it.
   disable: async ({ password, code }) =>
-    (await client.delete("/two-factor", { data: { password, code } })).data,
+    (await client.delete("/two-factor", { data: { password, code, acknowledged: true } })).data,
+  optOut: async () => (await client.post("/two-factor/opt-out", { acknowledged: true })).data,
 });
 
 /** The message to show for a failed two-factor request. */
