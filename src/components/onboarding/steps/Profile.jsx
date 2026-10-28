@@ -462,19 +462,28 @@ function Profile({ initial, onBack, onSuccess }) {
                   </p>
                 ) : null}
               </div>
-              {/* Decides the tax form in the signing package: W-9 for a US
+              {/* Decides the tax form in the signing package: W-9 for a U.S.
                   person, W-8BEN otherwise. Asked, not inferred from the
-                  address: a US citizen abroad still signs a W-9. */}
-              <fieldset className="sm:col-span-2">
-                <FieldLabel>Are you a US citizen or US resident for tax purposes?</FieldLabel>
-                <div className="grid grid-cols-2 gap-2">
+                  address: a U.S. citizen abroad still signs a W-9. */}
+              <fieldset className="sm:col-span-2 rounded-[12px] border border-black/10 p-4">
+                <legend className="px-1 text-[13px] font-semibold text-[#111111]">
+                  U.S. Tax Status
+                </legend>
+                <p className="text-[12px] leading-5 text-[#4b5563]">
+                  To provide the correct IRS tax form, we need to confirm your
+                  classification for U.S. federal tax purposes.
+                </p>
+                <p className="mt-3 text-[13px] font-semibold text-[#111111]">
+                  Are you considered a U.S. person for federal tax purposes?
+                </p>
+                <div className="mt-2 space-y-2">
                   {[
-                    { value: "yes", label: "Yes" },
-                    { value: "no", label: "No" },
+                    { value: "yes", label: "Yes", detail: "I am a U.S. citizen or U.S. tax resident." },
+                    { value: "no", label: "No", detail: "I am not a U.S. person for federal tax purposes." },
                   ].map((option) => (
                     <label
                       key={option.value}
-                      className={`flex h-11 cursor-pointer items-center gap-2 rounded-[10px] border bg-white px-3 text-[13px] text-[#111111] transition ${
+                      className={`flex min-h-11 cursor-pointer items-center gap-3 rounded-[10px] border bg-white px-3 py-2.5 text-[13px] text-[#111111] transition ${
                         profile.usPerson === option.value
                           ? "border-[#111111] ring-2 ring-black/5"
                           : errors.usPerson
@@ -488,21 +497,17 @@ function Profile({ initial, onBack, onSuccess }) {
                         value={option.value}
                         checked={profile.usPerson === option.value}
                         onChange={handleChange}
-                        className="h-3.5 w-3.5 accent-[#111111]"
+                        className="h-3.5 w-3.5 shrink-0 accent-[#111111]"
                       />
-                      {option.label}
+                      <span>
+                        <strong>{option.label}</strong> — {option.detail}
+                      </span>
                     </label>
                   ))}
                 </div>
                 {errors.usPerson ? (
                   <p className="mt-1 text-[10px] text-red-600">{errors.usPerson}</p>
-                ) : (
-                  <p className="mt-1 text-[10px] text-[#6b7280]">
-                    Yes if you are a US citizen, a green card holder, or otherwise
-                    resident in the US for tax purposes — wherever you live now.
-                    This decides whether you sign a W-9 or a W-8BEN.
-                  </p>
-                )}
+                ) : null}
               </fieldset>
               <div>
                 <FieldLabel>Password</FieldLabel>
