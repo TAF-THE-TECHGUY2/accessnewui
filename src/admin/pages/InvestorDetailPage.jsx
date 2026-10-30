@@ -268,16 +268,13 @@ function ManagingMemberControl({ investor, onSaved }) {
 }
 
 /**
- * For an investor who has lost their phone and their recovery codes. Shown only
- * while they have two-factor on; resetting lets them sign in with just their
- * password and set it up again from their profile.
+ * Clears an investor's authenticator, e.g. a lost or new phone. They are signed
+ * out and get a new QR code to scan at their next sign-in.
  */
 function TwoFactorResetControl({ investor, onSaved }) {
   const [confirming, setConfirming] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-
-  if (!investor.twoFactorEnabled) return null;
 
   const reset = async () => {
     setSaving(true);
@@ -296,13 +293,16 @@ function TwoFactorResetControl({ investor, onSaved }) {
     <div className="rounded-[16px] border border-[#eadfd2] bg-[#fcfaf7] p-4">
       <p className="text-sm font-semibold text-ink">Two-factor sign-in</p>
       <p className="mt-0.5 text-xs text-slate-500">
-        On. Reset only if they have lost their phone and recovery codes — confirm
-        who you are speaking to first.
+        {investor.twoFactorEnabled
+          ? "On. Resetting clears their QR code and signs them out; they scan a new one at next sign-in. Confirm who you are speaking to first."
+          : investor.twoFactorOptedOut
+            ? "Off: they chose to sign in without it."
+            : "Not set up yet. They will be asked to set it up at their next sign-in."}
       </p>
-      {confirming ? (
+      {!investor.twoFactorEnabled ? null : confirming ? (
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <span className="text-xs text-slate-600">
-            Switch off two-factor for {investor.name}?
+            Clear the QR code for {investor.name} and sign them out?
           </span>
           <button
             type="button"
@@ -329,7 +329,7 @@ function TwoFactorResetControl({ investor, onSaved }) {
           }}
           className="mt-3 inline-flex items-center rounded-[12px] border border-[#eadfd2] bg-white px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-[#fff1ef]"
         >
-          Reset two-factor
+          Reset QR code
         </button>
       )}
       {error ? <p className="mt-2 text-xs text-rose-600">{error}</p> : null}
