@@ -20,6 +20,7 @@ import {
   updatePortalProfile,
 } from "../../../services/investorPortalService";
 import TwoFactorManager from "../../../components/security/TwoFactorManager";
+import { PORTAL_CATEGORIES } from "./DocumentsPage";
 import { accreditationDisplayStatus } from "../../../utils/formatters";
 
 // Ordered to read across the two columns as pairs: name beside phone, the two
@@ -380,13 +381,14 @@ function ProfilePage() {
     // The Documents pill counts what the documents endpoint actually returns.
     // A failure here leaves it at null — "Loading…" is wrong but a fabricated
     // zero would be worse, so the count is simply not asserted.
-    // Same set as the Documents page: every category plus their signed copies.
+    // Same set as the Documents page: signed agreements in place of the
+    // legal templates.
     fetchPortalDocumentsWithSigned()
       .then(({ grouped, signed }) =>
         setDocumentCount(
           signed.length +
-            Object.values(grouped || {}).reduce(
-              (n, list) => n + (list?.length ?? 0),
+            PORTAL_CATEGORIES.reduce(
+              (n, cat) => n + (grouped?.[cat]?.length ?? 0),
               0,
             ),
         ),
