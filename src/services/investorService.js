@@ -81,3 +81,18 @@ export const registerInvestor = async ({
 
   return data;
 };
+
+/**
+ * Trades the token in a signing email for a DocuSign signing session. No
+ * sign-in: the token is the key. Resolves to { status, url?, message? };
+ * statuses other than "ready" arrive as error responses with the same shape.
+ */
+export const openSigningLink = async (token) => {
+  try {
+    const { data } = await publicApi.get(`/sign/${encodeURIComponent(token)}`);
+    return data;
+  } catch (err) {
+    if (err?.response?.data?.status) return err.response.data;
+    throw err;
+  }
+};

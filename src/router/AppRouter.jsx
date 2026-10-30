@@ -22,6 +22,10 @@ const InvestorLoginPage = lazy(() => import("../investor/pages/LoginPage"));
 const InvestorTwoFactorSetupPage = lazy(() => import("../investor/pages/TwoFactorSetupPage"));
 const InvestorForgotPasswordPage = lazy(() => import("../investor/pages/ForgotPasswordPage"));
 const InvestorResetPasswordPage = lazy(() => import("../investor/pages/ResetPasswordPage"));
+const SignPage = lazy(() => import("../investor/pages/SignPage"));
+const SigningCompletePage = lazy(() =>
+  import("../investor/pages/SignPage").then((m) => ({ default: m.SigningCompletePage })),
+);
 const InvestorDashboardPage = lazy(() => import("../investor/pages/DashboardPage"));
 const InvestReadyCallbackPage = lazy(() => import("../investor/pages/InvestReadyCallbackPage"));
 const RequireInvestorAuth = lazy(() => import("../investor/components/RequireInvestorAuth"));
@@ -48,6 +52,8 @@ function AppRouter() {
         <Route path="/login" element={<InvestorLoginPage />} />
         <Route path="/forgot-password" element={<InvestorForgotPasswordPage />} />
         <Route path="/reset-password" element={<InvestorResetPasswordPage />} />
+        <Route path="/sign/:token" element={<SignPage />} />
+        <Route path="/signing/complete" element={<SigningCompletePage />} />
         <Route element={<RequireInvestorAuth />}>
           {/* Outside the portal: it must work before two-factor is decided. */}
           <Route path="/security/two-factor" element={<InvestorTwoFactorSetupPage />} />
