@@ -23,7 +23,9 @@ import StripeFundingPanel from "../components/StripeFundingPanel";
 import PortalLayout from "../portal/PortalLayout";
 import OnboardingShell from "../../components/onboarding/OnboardingShell";
 import {
+  fetchOpenAgreement,
   fetchPortalDocuments,
+  getAgreementSigningLink,
   logout,
   me,
   recordPersonaInquiryCompletion,
@@ -77,7 +79,7 @@ function markOfferingDocsViewed(investorId) {
   }
 }
 
-function buildSteps(investor, offeringDocsViewed) {
+function buildSteps(investor, offeringDocsViewed, agreement = null) {
   const status = investor.investmentStatus;
   const kyc = investor.kycStatus;
   const accreditation = investor.accreditationVerificationStatus;
@@ -141,7 +143,10 @@ function buildSteps(investor, offeringDocsViewed) {
         "Review and electronically sign the subscription agreement and related documents.",
       icon: FileSignature,
       action: "docusign",
-      placeholder: true,
+      actionLabel: "Sign documents",
+      // Signable here once an agreement has been sent with portal signing;
+      // until then the admin sends it and the step says so.
+      placeholder: !agreement?.canSignInPortal,
       complete: docSigning === "completed" || docSigning === "signed",
       current:
         status === "awaiting_documents" || status === "awaiting_legal_approval",
@@ -441,6 +446,7 @@ function DashboardPage() {
   const [showPersona, setShowPersona] = useState(false);
   const [showDocuments, setShowDocuments] = useState(false);
   const [docsViewed, setDocsViewed] = useState(false);
+  const [agreement, setAgreement] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -456,6 +462,12 @@ function DashboardPage() {
 
         setInvestor(data);
         setDocsViewed(hasViewedOfferingDocs(data.id));
+        // Not fatal: without it the documents step reads as before.
+        fetchOpenAgreement()
+          .then((a) => {
+            if (!cancelled) setAgreement(a);
+          })
+          .catch(() => {});
       } catch (err) {
         if (err?.response?.status === 401) {
           navigate("/login", { replace: true });
@@ -477,8 +489,8 @@ function DashboardPage() {
   }, [navigate]);
 
   const steps = useMemo(
-    () => (investor ? buildSteps(investor, docsViewed) : []),
-    [investor, docsViewed]
+    () => (investor ? buildSteps(investor, docsViewed, agreement) : []),
+    [investor, docsViewed, agreement]
   );
   const currentStepKey = useMemo(() => {
     if (!investor) return null;
@@ -500,6 +512,10 @@ function DashboardPage() {
         const refreshed = await startPersonaInquiry();
         setInvestor(refreshed);
         setShowPersona(true);
+      } else if (step.action === "docusign" && agreement?.id) {
+        // A fresh one-time link each time: DocuSign expires them in minutes.
+        window.location.href = await getAgreementSigningLink(agreement.id);
+        return;
       } else if (step.action === "verify-investor") {
         const response = await startInvestReadyVerification();
         if (response?.authorizationUrl) {

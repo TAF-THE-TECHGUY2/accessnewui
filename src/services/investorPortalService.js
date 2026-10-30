@@ -354,3 +354,15 @@ export const fetchBreakdown = async (fundCode) => {
   );
   return data;
 };
+
+/** The investor's agreement out for signature, if any: { id, status, canSignInPortal }. */
+export const fetchOpenAgreement = async () => {
+  const { data } = await investorApi.get("/portal/agreement");
+  return data.data;
+};
+
+/** A one-time DocuSign signing link for the investor's own agreement. */
+export const getAgreementSigningLink = async (agreementId) => {
+  const { data } = await investorApi.post(`/portal/agreements/${agreementId}/signing-link`);
+  return data.url;
+};

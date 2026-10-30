@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
-import { Download, FileSignature, RefreshCw, Send, Trash2 } from "lucide-react";
+import { Copy, Download, ExternalLink, FileSignature, Link2, RefreshCw, Send, Trash2 } from "lucide-react";
 
 import LoadingState from "./LoadingState";
 import EmptyState from "./EmptyState";
 import StatusBadge from "./StatusBadge";
 import {
   downloadAgreementPdf,
+  getAgreementSigningLink,
   getInvestorAgreements,
   resendAgreement,
   sendInvestorAgreement,
@@ -19,6 +20,24 @@ function InvestorAgreements({ investorCode, investorName }) {
   const [sending, setSending] = useState(false);
   const [pendingId, setPendingId] = useState(null);
   const [error, setError] = useState(null);
+  // { envelopeId, role, url } for the link just generated.
+  const [link, setLink] = useState(null);
+  const [copied, setCopied] = useState(false);
+
+  const handleSigningLink = async (envelopeId, role) => {
+    setPendingId(envelopeId);
+    setError(null);
+    setLink(null);
+    setCopied(false);
+    try {
+      const data = await getAgreementSigningLink(envelopeId, role);
+      setLink({ envelopeId, role, url: data.url });
+    } catch (err) {
+      setError(err?.response?.data?.message || "Could not get a signing link.");
+    } finally {
+      setPendingId(null);
+    }
+  };
 
   const load = useCallback(async () => {
     if (!investorCode) return;
@@ -135,6 +154,51 @@ function InvestorAgreements({ investorCode, investorName }) {
         </div>
       ) : null}
 
+      {link ? (
+        <div className="mt-3 rounded-[14px] border border-teal-200 bg-[#f1f8f7] p-3 text-sm">
+          <p className="font-semibold text-ink">
+            {link.role === "counter_signer" ? "Counter signer" : "Investor"} signing link
+          </p>
+          <p className="mt-0.5 text-xs text-gray-600">
+            Works once and expires in about five minutes. Open it now, or send it
+            to the signer straight away; get a new one if it has expired.
+          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <a
+              href={link.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-full bg-[#0f4f4f] px-3 py-1.5 text-xs font-semibold text-white"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+              Open
+            </a>
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(link.url);
+                  setCopied(true);
+                } catch {
+                  // Clipboard blocked: the Open link still works.
+                }
+              }}
+              className="inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-white px-3 py-1.5 text-xs font-semibold text-ink"
+            >
+              <Copy className="h-3.5 w-3.5" />
+              {copied ? "Copied" : "Copy link"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setLink(null)}
+              className="text-xs text-gray-500 hover:text-ink"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       {loading ? (
         <LoadingState />
       ) : agreements.length === 0 ? (
@@ -182,6 +246,31 @@ function InvestorAgreements({ investorCode, investorName }) {
                           <Download className="h-3.5 w-3.5" />
                           PDF
                         </button>
+                      ) : null}
+
+                      {a.embeddedSigning && !["completed", "voided", "declined"].includes(a.status) ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => handleSigningLink(a.id, "counter_signer")}
+                            disabled={pendingId === a.id}
+                            className="inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-white px-3 py-1.5 text-xs font-semibold text-ink transition hover:bg-[#f5f4f1] disabled:opacity-50"
+                            title="One-time signing link for the counter signer"
+                          >
+                            <Link2 className="h-3.5 w-3.5" />
+                            Counter signer link
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleSigningLink(a.id, "investor")}
+                            disabled={pendingId === a.id}
+                            className="inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-white px-3 py-1.5 text-xs font-semibold text-ink transition hover:bg-[#f5f4f1] disabled:opacity-50"
+                            title="One-time signing link for the investor"
+                          >
+                            <Link2 className="h-3.5 w-3.5" />
+                            Investor link
+                          </button>
+                        </>
                       ) : null}
 
                       {["sent", "delivered"].includes(a.status) ? (

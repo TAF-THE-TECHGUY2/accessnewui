@@ -154,6 +154,12 @@ export const resendAgreement = async (envelopeId) => {
   return data;
 };
 
+/** A one-time signing link for one signer; DocuSign expires it in about five minutes. */
+export const getAgreementSigningLink = async (envelopeId, role) => {
+  const { data } = await api.post(`/agreements/${envelopeId}/signing-link`, { role });
+  return data;
+};
+
 export const voidAgreement = async (envelopeId, reason) => {
   const { data } = await api.post(`/agreements/${envelopeId}/void`, { reason });
   return data;
