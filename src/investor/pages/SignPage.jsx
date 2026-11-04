@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { CheckCircle2, Clock, Loader2, XCircle } from "lucide-react";
 
-import { openSigningLink } from "../../services/investorService";
+import { openSigningLink, reportSigningReturn } from "../../services/investorService";
 
 const cardClass =
   "mt-8 w-full rounded-[20px] bg-white p-7 text-center shadow-[0_18px_40px_rgba(17,24,39,0.08)]";
@@ -129,12 +129,42 @@ const OUTCOMES = {
 /** Where DocuSign sends a signer back to when they finish or leave. */
 export function SigningCompletePage() {
   const [searchParams] = useSearchParams();
-  const outcome = OUTCOMES[searchParams.get("event")] || {
+  const token = searchParams.get("t");
+  const [report, setReport] = useState(null);
+
+  // Lets the app record the signature and email the next signer now.
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+    reportSigningReturn(token).then((data) => {
+      if (!cancelled) setReport(data);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
+  let outcome = OUTCOMES[searchParams.get("event")] || {
     title: "Signing paused.",
     message:
       "Nothing has been signed yet. Open the link in your email again whenever you're ready to continue.",
     icon: Clock,
   };
+  if (searchParams.get("event") === "signing_complete" && report?.status === "completed") {
+    outcome = {
+      ...outcome,
+      message:
+        "Everyone has now signed. We've emailed you a confirmation, and the signed copy will be in your documents shortly.",
+    };
+    if (report.role === "counter_signer") {
+      outcome.message = "Your signature has been recorded, and the agreement is now fully signed.";
+    }
+  } else if (searchParams.get("event") === "signing_complete" && report?.role === "counter_signer" && report.signed) {
+    outcome = {
+      ...outcome,
+      message: "Your countersignature has been recorded. The investor has been emailed to sign next.",
+    };
+  }
   const Icon = outcome.icon;
 
   return (
@@ -142,6 +172,14 @@ export function SigningCompletePage() {
       <div className={cardClass}>
         <Icon className="mx-auto h-10 w-10 text-[#111111]" />
         <p className="mt-4 text-[14px] leading-6 text-[#6b7280]">{outcome.message}</p>
+        {report?.role === "investor" ? (
+          <Link
+            to="/dashboard"
+            className="mt-6 inline-flex h-[50px] w-full items-center justify-center rounded-[10px] bg-black px-5 text-[15px] font-medium text-white shadow-[0_10px_20px_rgba(17,24,39,0.2)] transition hover:bg-[#1f2937]"
+          >
+            Go to your dashboard
+          </Link>
+        ) : null}
       </div>
     </Shell>
   );

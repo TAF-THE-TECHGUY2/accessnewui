@@ -96,3 +96,17 @@ export const openSigningLink = async (token) => {
     throw err;
   }
 };
+
+/**
+ * Tells the API a signer is back from DocuSign, so it checks the agreement now
+ * rather than waiting for its scheduled follow-up. Resolves to
+ * { status, role, signed }, or null if it could not be reached.
+ */
+export const reportSigningReturn = async (token) => {
+  try {
+    const { data } = await publicApi.post(`/sign/${encodeURIComponent(token)}/returned`);
+    return data;
+  } catch {
+    return null;
+  }
+};
