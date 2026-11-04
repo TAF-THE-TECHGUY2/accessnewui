@@ -66,8 +66,10 @@ function AddUnitPriceForm({ fundCode, onAdded }) {
       <input
         required
         type="number"
-        step="0.0001"
-        placeholder="Price (e.g. 114.00)"
+        // The Base NAV is published to 10 decimals (e.g. 14.0945809850) and
+        // prices are worked out from it unrounded, so take any precision.
+        step="any"
+        placeholder="Price (e.g. 14.0945809850)"
         value={form.price}
         onChange={(e) => setForm({ ...form, price: e.target.value })}
         className="h-10 rounded-[10px] border border-black/10 px-3 text-sm outline-none focus:border-teal-600"
