@@ -15,6 +15,7 @@ import {
   downloadFundDocument,
   fetchAdminFund,
   updateAdminFund,
+  updateFundPremium,
   uploadFundDocument,
 } from "../../services/adminService";
 
@@ -101,6 +102,127 @@ function AddUnitPriceForm({ fundCode, onAdded }) {
         </p>
       ) : null}
     </form>
+  );
+}
+
+/**
+ * The issuance premium new subscriptions pay over the Base NAV. Changing it
+ * reprices agreements sent from now on; ones already out keep their price.
+ */
+function PremiumSection({ fundCode, premiumPct, nav, changes, onSaved }) {
+  const [form, setForm] = useState({ pct: "", reason: "" });
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+
+  const pending = form.pct === "" ? null : Number(form.pct);
+  const priceAt = (pct) => (nav ? nav * (1 + pct / 100) : null);
+  const preview = pending !== null && !Number.isNaN(pending) ? priceAt(pending) : null;
+  const current = priceAt(premiumPct);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (
+      !confirm(
+        `Change the premium from ${premiumPct.toFixed(2)}% to ${pending.toFixed(2)}%? ` +
+          "Agreements sent from now on are priced at the new premium; ones already sent keep theirs.",
+      )
+    ) {
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await updateFundPremium(fundCode, { premiumPct: pending, reason: form.reason || undefined });
+      setForm({ pct: "", reason: "" });
+      onSaved();
+    } catch (err) {
+      setError(err?.response?.data?.message || "Could not change the premium.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Section
+      title="Issuance premium"
+      action={<span className="text-xs text-gray-500">applies to new agreements</span>}
+    >
+      <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1">
+        <p className="font-display text-[22px] text-ink">{premiumPct.toFixed(2)}%</p>
+        <p className="text-sm text-gray-500">
+          {current
+            ? `Price per unit $${current.toFixed(4)} (NAV $${nav.toFixed(4)} plus premium)`
+            : "No NAV published yet"}
+        </p>
+      </div>
+
+      <form onSubmit={submit} className="mt-4 grid gap-2 sm:grid-cols-[160px_1fr_auto]">
+        <input
+          required
+          type="number"
+          step="0.001"
+          min="-50"
+          max="100"
+          placeholder="New premium %"
+          value={form.pct}
+          onChange={(e) => setForm({ ...form, pct: e.target.value })}
+          className="h-10 rounded-[10px] border border-black/10 px-3 text-sm outline-none focus:border-teal-600"
+        />
+        <input
+          type="text"
+          maxLength={255}
+          placeholder="Reason (optional, kept in the history)"
+          value={form.reason}
+          onChange={(e) => setForm({ ...form, reason: e.target.value })}
+          className="h-10 rounded-[10px] border border-black/10 px-3 text-sm outline-none focus:border-teal-600"
+        />
+        <button
+          type="submit"
+          disabled={busy || pending === null}
+          className="h-10 rounded-[10px] bg-black px-4 text-sm font-medium text-white disabled:opacity-60"
+        >
+          {busy ? "…" : "Change"}
+        </button>
+        {preview ? (
+          <p className="text-xs text-gray-500 sm:col-span-3">
+            New price per unit ${preview.toFixed(4)} · $10,000 buys{" "}
+            {(10000 / Number(preview.toFixed(4))).toFixed(4)} units
+          </p>
+        ) : null}
+        {error ? (
+          <p className="rounded-[10px] bg-red-50 px-3 py-1.5 text-xs text-red-700 sm:col-span-3">
+            {error}
+          </p>
+        ) : null}
+      </form>
+
+      {changes.length ? (
+        <div className="mt-4 overflow-x-auto rounded-[12px] border border-black/5">
+          <table className="w-full text-sm">
+            <thead className="bg-[#fafaf8] text-[11px] uppercase tracking-[0.12em] text-gray-500">
+              <tr>
+                <th className="px-4 py-2 text-left">Changed</th>
+                <th className="px-4 py-2 text-left">From → to</th>
+                <th className="px-4 py-2 text-left">By</th>
+                <th className="px-4 py-2 text-left">Reason</th>
+              </tr>
+            </thead>
+            <tbody>
+              {changes.map((c) => (
+                <tr key={c.id} className="border-t border-black/5">
+                  <td className="px-4 py-2 text-gray-500">{new Date(c.changedAt).toLocaleString()}</td>
+                  <td className="px-4 py-2 text-ink">
+                    {c.oldPct === null ? "—" : `${c.oldPct.toFixed(2)}%`} → {c.newPct.toFixed(2)}%
+                  </td>
+                  <td className="px-4 py-2 text-gray-500">{c.changedBy || "System"}</td>
+                  <td className="px-4 py-2 text-gray-500">{c.reason || ""}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
+    </Section>
   );
 }
 
@@ -675,6 +797,7 @@ function FundDetailPage() {
     aumAtNav,
     holdingsCount,
     unitPrices,
+    premiumChanges = [],
     recentDistributions,
     recentFees,
     documents = [],
@@ -767,6 +890,14 @@ function FundDetailPage() {
           </table>
         </div>
       </Section>
+
+      <PremiumSection
+        fundCode={code}
+        premiumPct={fund.premiumPct ?? 0}
+        nav={fund.currentUnitPrice}
+        changes={premiumChanges}
+        onSaved={reload}
+      />
 
       <Section
         title="Declare distribution"

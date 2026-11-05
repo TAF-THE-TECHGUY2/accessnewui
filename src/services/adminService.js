@@ -231,6 +231,11 @@ export const addFundUnitPrice = async (code, payload) => {
   return data;
 };
 
+export const updateFundPremium = async (code, payload) => {
+  const { data } = await api.post(`/funds/${code}/premium`, payload);
+  return data;
+};
+
 export const deleteFundUnitPrice = async (id) => {
   const { data } = await api.delete(`/unit-prices/${id}`);
   return data;
